@@ -46,7 +46,7 @@ echo ********** 2 / 3 RUN CMAKE **********
 
 mkdir Build
 cd Build
-cmake -DCMAKE_TOOLCHAIN_FILE=C:/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. -G "NMake Makefiles" || goto :error
+call emcmake cmake -DCMAKE_TOOLCHAIN_FILE=C:/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. -G "NMake Makefiles" || goto :error
 
 
 echo ********** 3 / 3 BUILD **********
