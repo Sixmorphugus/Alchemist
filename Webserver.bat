@@ -4,6 +4,6 @@
 echo ********** STARTING WEBSERVER **********
 
 
-cd Build
+cd Build_Web
 call python -m http.server
 pause
