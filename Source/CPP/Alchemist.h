@@ -16,8 +16,18 @@ public:
 	/** Run() will run the environment until the user closes it. */
 	void Run();
 
+	/** Gets window start width. */
+	int GetWindowStartWidth();
+
+	/** Gets window start height. */
+	int GetWindowStartHeight();
+	
 private:
 	static void _Loop();
+
+#if IS_WEB
+	static EM_BOOL _UiEvent(int Type, const EmscriptenUiEvent* UiEvent, void* UserData);
+#endif
 	
 private:
 	bool Close = false;
