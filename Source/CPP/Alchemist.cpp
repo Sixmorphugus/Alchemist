@@ -145,8 +145,8 @@ void Alchemist::_Loop()
 	
 	SDL_SetRenderDrawColor(LoopingInstance->Renderer, 220, 220, 220, 255);
 
-	int x = (LoopingInstance->ViewTopLeft.X >= 0 ? -abs(LoopingInstance->ViewTopLeft.X) : abs(LoopingInstance->ViewTopLeft.X)) % SquareSize;
-	int y = (LoopingInstance->ViewTopLeft.Y >= 0 ? -abs(LoopingInstance->ViewTopLeft.Y) : abs(LoopingInstance->ViewTopLeft.Y)) % SquareSize;
+	int x = -LoopingInstance->ViewTopLeft.X % SquareSize;
+	int y = -LoopingInstance->ViewTopLeft.Y % SquareSize;
 	
 	for (; x < Width; x += SquareSize)
 	{
