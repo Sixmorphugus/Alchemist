@@ -38,6 +38,7 @@ FILE(GLOB_RECURSE SOURCE CONFIGURE_DEPENDS
 
 message(STATUS "SOURCE FILES ${SOURCE}")
 
+include_directories(${CMAKE_SOURCE_DIR}/Source/CPP)
 include_directories(${SDL2_INCLUDE_DIRS})
 
 add_executable(Alchemist ${SOURCE})
@@ -93,3 +94,10 @@ if(NOT IS_WEB)
 		Alchemist PROPERTIES
 		VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:Alchemist>)
 endif()
+
+foreach(_source IN ITEMS ${SOURCE})
+    get_filename_component(_source_path "${_source}" PATH)
+    string(REPLACE "${CMAKE_SOURCE_DIR}" "" _group_path "${_source_path}")
+    string(REPLACE "/" "\\" _group_path "${_group_path}")
+    source_group("${_group_path}" FILES "${_source}")
+endforeach()

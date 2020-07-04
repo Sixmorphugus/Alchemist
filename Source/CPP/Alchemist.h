@@ -19,13 +19,13 @@ public:
 
 	/** Core loop inner function. Processes a single Frame when called. */
 	void Frame();
-
+	
 	/** Handles emscripten ui resize event. */
 #if IS_WEB
 	EM_BOOL UiEvent(int Type, const EmscriptenUiEvent* UiEvent);
 #endif
 	
-private:
+private:	
 	/** Gets window start size. */
 	Size _GetWindowStartSize();
 	
@@ -43,4 +43,6 @@ private:
 	
 	SDL_Surface* TestImageSurface;
 	SDL_Texture* TestImageTexture;
+
+	NodeManager Nodes;
 };

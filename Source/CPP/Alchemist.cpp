@@ -97,7 +97,7 @@ void Alchemist::Frame()
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
-				if (Event.button.button == 3)
+				if (Event.button.button == 2)
 				{
 					printf("Drag start\n");
 					ViewDrag = true;
@@ -107,7 +107,7 @@ void Alchemist::Frame()
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
-				if (Event.button.button == 3)
+				if (Event.button.button == 2)
 				{
 					printf("Drag stop\n");
 					ViewDrag = false;
