@@ -16,17 +16,18 @@ public:
 
 	/** Run() will run the environment until the user closes it. */
 	void Run();
+
+	/** Core loop inner function. Processes a single Frame when called. */
+	void Frame();
+
+	/** Handles emscripten ui resize event. */
+#if IS_WEB
+	EM_BOOL UiEvent(int Type, const EmscriptenUiEvent* UiEvent);
+#endif
 	
 private:
 	/** Gets window start size. */
-	Size GetWindowStartSize();
-
-	/** Core loop function, declared static for emscripten callback binding. */
-	static void _Loop();
-
-#if IS_WEB
-	static EM_BOOL _UiEvent(int Type, const EmscriptenUiEvent* UiEvent, void* UserData);
-#endif
+	Size _GetWindowStartSize();
 	
 private:
 	bool Close = false;
