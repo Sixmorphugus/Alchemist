@@ -10,7 +10,8 @@
  * - Open a file for binary writing.
  * 
  * - Write a header explaining not to mess with the file in ASCII text, followed by a new line; "### This is an Alchemist project data file. DO NOT mess with it! ###\n"
- * - Write "ALCH" in characters followed by the format version.
+ * - Write "ALCH" in characters.
+ * - Write the format version (int32).
  * 
  * - Write the constant count (int32).
  * - Write the size of the following list of constants (size_t).
@@ -51,6 +52,8 @@
  *         - Write the start position (2 int32s)
  *         - Write the target position (2 int32s)
  *         - Write the ID of the argument the connector is connected to on the target (uint8)
+ *
+ * - Done!
  *
  * To load, we:
  * - Do the reverse of all of that. You can get straight out of here if you think I'm about to write all that out again.

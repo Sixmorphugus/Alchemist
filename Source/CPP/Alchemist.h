@@ -4,6 +4,7 @@
 
 #include "Libs.h"
 #include "2DPositioning.h"
+#include "Nodes/Nodes.h"
 
 class Alchemist
 {
