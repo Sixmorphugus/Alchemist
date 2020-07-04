@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Libs.h"
+#include "2DPositioning.h"
 
 class Alchemist
 {
@@ -15,14 +16,12 @@ public:
 
 	/** Run() will run the environment until the user closes it. */
 	void Run();
-
-	/** Gets window start width. */
-	int GetWindowStartWidth();
-
-	/** Gets window start height. */
-	int GetWindowStartHeight();
 	
 private:
+	/** Gets window start size. */
+	Size GetWindowStartSize();
+
+	/** Core loop function, declared static for emscripten callback binding. */
 	static void _Loop();
 
 #if IS_WEB
@@ -31,10 +30,16 @@ private:
 	
 private:
 	bool Close = false;
+	bool ViewDrag = false;
+
+	Point ViewTopLeft;
 	
 	SDL_Window* Window;
 	SDL_Renderer* Renderer;
 	SDL_Surface* WindowSurface;
-	SDL_Surface* LogoSurface;
-	SDL_Texture* LogoTexture;
+
+	TTF_Font* Font;
+	
+	SDL_Surface* TestImageSurface;
+	SDL_Texture* TestImageTexture;
 };

@@ -7,7 +7,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Emscripten")
 	add_compile_definitions(IS_WEB=1)
 	set(IS_WEB 1)
 	
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS=['png'] -std=c++11 --preload-file ${CMAKE_SOURCE_DIR}/Resources@/Resources --shell-file ${CMAKE_SOURCE_DIR}/Source/HTML/Shell.html")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS=['png'] -s USE_SDL_TTF=2 -std=c++11 --preload-file ${CMAKE_SOURCE_DIR}/Resources@/Resources --shell-file ${CMAKE_SOURCE_DIR}/Source/HTML/Shell.html")
 	
 	set(CMAKE_EXECUTABLE_SUFFIX .html)
 else()
@@ -19,6 +19,7 @@ else()
 	set(SDL2_INCLUDE_DIRS 
 		"${CMAKE_SOURCE_DIR}/ThirdParty/SDL2/include"
 		"${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_image/include"
+		"${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_ttf/include"
 	)
 	
 	set(SDL2_LIBRARIES
@@ -26,6 +27,7 @@ else()
 		"${CMAKE_SOURCE_DIR}/ThirdParty/SDL2/lib/x64/SDL2main.lib"
 		"${CMAKE_SOURCE_DIR}/ThirdParty/SDL2/lib/x64/SDL2test.lib"
 		"${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_image/lib/x64/SDL2_image.lib"
+		"${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_ttf/lib/x64/SDL2_ttf.lib"
 	)
 endif()
 
@@ -62,6 +64,22 @@ if(NOT IS_WEB)
 	add_custom_command(TARGET Alchemist POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_image/lib/x64/libpng16-16.dll"
+        $<TARGET_FILE_DIR:Alchemist>)
+	
+	# SDL2_ttf DLLs
+	add_custom_command(TARGET Alchemist POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_ttf/lib/x64/SDL2_ttf.dll"
+        $<TARGET_FILE_DIR:Alchemist>)
+	
+	add_custom_command(TARGET Alchemist POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_ttf/lib/x64/libfreetype-6.dll"
+        $<TARGET_FILE_DIR:Alchemist>)
+	
+	add_custom_command(TARGET Alchemist POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/ThirdParty/SDL2_ttf/lib/x64/zlib1.dll"
         $<TARGET_FILE_DIR:Alchemist>)
 	
 	# Data

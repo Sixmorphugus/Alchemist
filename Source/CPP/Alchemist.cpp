@@ -36,26 +36,22 @@ Alchemist::Alchemist()
 {
 	// Initialize SDL
 	assert(SDL_Init(SDL_INIT_VIDEO) == 0);
-	assert(SDL_CreateWindowAndRenderer(GetWindowStartWidth(), GetWindowStartHeight(), 0, &Window, &Renderer) == 0);
+	assert(SDL_CreateWindowAndRenderer(GetWindowStartSize().X, GetWindowStartSize().Y, 0, &Window, &Renderer) == 0);
 	
 	SDL_SetWindowResizable(Window, SDL_TRUE);
 	
 	// Get window surface
 	WindowSurface = SDL_GetWindowSurface(Window);
 
-	// Load our background @ image
-	LogoSurface = IMG_Load("Resources/arobase.png");
-	assert(LogoSurface);
+	// Load resources
+	Font = TTF_OpenFont("Resources/Font.ttf", 24);
+	TestImageSurface = IMG_Load("Resources/arobase.png");
 
-	LogoTexture = SDL_CreateTextureFromSurface(Renderer, LogoSurface);
+	TestImageTexture = SDL_CreateTextureFromSurface(Renderer, TestImageSurface);
 }
 
 Alchemist::~Alchemist()
 {
-	// Destroy background
-	SDL_DestroyTexture(LogoTexture);
-	SDL_FreeSurface(LogoSurface);
-	
 	// Destroy window
 	SDL_DestroyWindow(Window);
 
@@ -79,22 +75,13 @@ void Alchemist::Run()
 #endif
 }
 
-int Alchemist::GetWindowStartWidth()
+Size Alchemist::GetWindowStartSize()
 {
 #if IS_WEB
-	return GetWindowWidthJS();
+	return { GetWindowWidthJS(), GetWindowHeightJS() };
+#else
+	return { 1600, 900 };
 #endif
-	
-	return 1600;
-}
-
-int Alchemist::GetWindowStartHeight()
-{
-#if IS_WEB
-	return GetWindowHeightJS();
-#endif
-	
-	return 900;
 }
 
 void Alchemist::_Loop()
@@ -104,31 +91,79 @@ void Alchemist::_Loop()
 	//Handle events on queue
 	while (SDL_PollEvent(&Event))
 	{
-		//User requests quit
-		if (Event.type == SDL_QUIT)
+		switch(Event.type)
 		{
-			LoopingInstance->Close = true;
+			case SDL_QUIT:
+			{
+				LoopingInstance->Close = true;
+				break;
+			}
+			case SDL_MOUSEBUTTONDOWN:
+			{
+				if(Event.button.button == 3)
+				{
+					printf("Drag start\n");
+					LoopingInstance->ViewDrag = true;
+				}
+				
+				break;
+			}
+			case SDL_MOUSEBUTTONUP:
+			{
+				if (Event.button.button == 3)
+				{
+					printf("Drag stop\n");
+					LoopingInstance->ViewDrag = false;
+				}
+				
+				break;
+			}
+			case SDL_MOUSEMOTION:
+			{
+				if(LoopingInstance->ViewDrag)
+				{
+					LoopingInstance->ViewTopLeft.X -= Event.motion.xrel;
+					LoopingInstance->ViewTopLeft.Y -= Event.motion.yrel;
+				}
+				
+				break;
+			}
 		}
 	}
 
-	// Draw
+	// Draw background
 	SDL_SetRenderDrawColor(LoopingInstance->Renderer, 255, 255, 255, 255);
 	SDL_RenderClear(LoopingInstance->Renderer);
 
+	// Draw grid
 	int Width;
 	int Height;
 
 	SDL_GetWindowSize(LoopingInstance->Window, &Width, &Height);
+
+	int SquareSize = 64;
 	
-	for (int x = 0; x < Width; x += 300)
+	SDL_SetRenderDrawColor(LoopingInstance->Renderer, 220, 220, 220, 255);
+
+	int x = (LoopingInstance->ViewTopLeft.X >= 0 ? -abs(LoopingInstance->ViewTopLeft.X) : abs(LoopingInstance->ViewTopLeft.X)) % SquareSize;
+	int y = (LoopingInstance->ViewTopLeft.Y >= 0 ? -abs(LoopingInstance->ViewTopLeft.Y) : abs(LoopingInstance->ViewTopLeft.Y)) % SquareSize;
+	
+	for (; x < Width; x += SquareSize)
 	{
-		for (int y = 0; y < Height; y += 300)
-		{
-			SDL_Rect DestRect = { x, y, 300, 300 };
-			SDL_RenderCopy(LoopingInstance->Renderer, LoopingInstance->LogoTexture, NULL, &DestRect);
-		}
+		SDL_RenderDrawLine(LoopingInstance->Renderer, x, 0, x, Height);
 	}
 
+	for (; y < Height; y += SquareSize)
+	{
+		SDL_RenderDrawLine(LoopingInstance->Renderer, 0, y, Width, y);
+	}
+
+	// Draw sprite
+	SDL_Rect DestRect = {-LoopingInstance->ViewTopLeft.X, -LoopingInstance->ViewTopLeft.Y, 200, 200};
+	
+	SDL_RenderCopy(LoopingInstance->Renderer, LoopingInstance->TestImageTexture, NULL, &DestRect);
+
+	// Finish
 	SDL_RenderPresent(LoopingInstance->Renderer);
 }
 
