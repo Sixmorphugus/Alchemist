@@ -53,9 +53,6 @@ Alchemist::Alchemist()
 
 	// Load resources
 	Font = TTF_OpenFont("Resources/Font.ttf", 24);
-	TestImageSurface = IMG_Load("Resources/arobase.png");
-
-	TestImageTexture = SDL_CreateTextureFromSurface(Renderer, TestImageSurface);
 }
 
 Alchemist::~Alchemist()
@@ -138,30 +135,49 @@ void Alchemist::Frame()
 
 	SDL_GetWindowSize(Window, &Width, &Height);
 
-	int SquareSize = 64;
-
 	SDL_SetRenderDrawColor(Renderer, 220, 220, 220, 255);
 
-	int x = -ViewTopLeft.X % SquareSize;
-	int y = -ViewTopLeft.Y % SquareSize;
+	int x = -ViewTopLeft.X % GridSize;
+	int y = -ViewTopLeft.Y % GridSize;
 
-	for (; x < Width; x += SquareSize)
+	for (; x < Width; x += GridSize)
 	{
 		SDL_RenderDrawLine(Renderer, x, 0, x, Height);
 	}
 
-	for (; y < Height; y += SquareSize)
+	for (; y < Height; y += GridSize)
 	{
 		SDL_RenderDrawLine(Renderer, 0, y, Width, y);
 	}
 
-	// Draw sprite
-	SDL_Rect DestRect = { -ViewTopLeft.X, -ViewTopLeft.Y, 200, 200 };
-
-	SDL_RenderCopy(Renderer, TestImageTexture, NULL, &DestRect);
+	// If 0, 0 is on screen, draw it
+	SDL_SetRenderDrawColor(Renderer, 150, 150, 150, 255);
+	
+	SDL_RenderDrawLine(Renderer, ViewTopLeft.X, -ViewTopLeft.Y, Width, -ViewTopLeft.Y);
+	SDL_RenderDrawLine(Renderer, -ViewTopLeft.X, ViewTopLeft.Y, -ViewTopLeft.X, Height);
 
 	// Finish
 	SDL_RenderPresent(Renderer);
+}
+
+Point Alchemist::ScreenToGraph(const Point& ScreenPosition)
+{
+	return ScreenPosition - ViewTopLeft;
+}
+
+Point Alchemist::GraphToScreen(const Point& GraphPosition)
+{
+	return GraphPosition + ViewTopLeft;
+}
+
+Point Alchemist::GraphToGrid(const Point& GraphPosition)
+{
+	return GraphPosition / GridSize;
+}
+
+Point Alchemist::GridToGraph(const Point& GridPosition)
+{
+	return GridPosition * GridSize;
 }
 
 #if IS_WEB

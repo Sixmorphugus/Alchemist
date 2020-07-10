@@ -16,3 +16,9 @@
 #endif
 
 #include <stdio.h>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
+using namespace std;

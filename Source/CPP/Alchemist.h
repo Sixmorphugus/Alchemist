@@ -6,6 +6,8 @@
 #include "2DPositioning.h"
 #include "Nodes/Nodes.h"
 
+const int GridSize = 64;
+
 class Alchemist
 {
 public:
@@ -25,6 +27,18 @@ public:
 #if IS_WEB
 	EM_BOOL UiEvent(int Type, const EmscriptenUiEvent* UiEvent);
 #endif
+
+	/** Converts screen position to graph position. */
+	Point ScreenToGraph(const Point& ScreenPosition);
+
+	/** Converts graph position to screen position. */
+	Point GraphToScreen(const Point& GraphPosition);
+
+	/** Converts graph position to grid position. */
+	Point GraphToGrid(const Point& GraphPosition);
+
+	/** Converts grid position to graph position. */
+	Point GridToGraph(const Point& GridPosition);
 	
 private:	
 	/** Gets window start size. */
@@ -41,9 +55,8 @@ private:
 	SDL_Surface* WindowSurface;
 
 	TTF_Font* Font;
-	
-	SDL_Surface* TestImageSurface;
-	SDL_Texture* TestImageTexture;
 
 	NodeManager Nodes;
+
+	unordered_map<Point, Node*> NodesOnGrid;
 };
