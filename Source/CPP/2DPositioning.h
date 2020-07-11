@@ -41,6 +41,20 @@ struct Point
 		: X(XIn), Y(YIn)
 	{}
 
+	Point(int In)
+		: X(In), Y(In)
+	{}
+
+	bool operator==(const Point& Other) const
+	{
+		return X == Other.X && Y == Other.Y;
+	}
+
+	bool operator!=(const Point& Other) const
+	{
+		return X != Other.X || Y != Other.Y;
+	}
+	
 	IMPLEMENT_POINT_ARITHMETIC(+);
 	IMPLEMENT_POINT_ARITHMETIC(-);
 	IMPLEMENT_POINT_ARITHMETIC(*);

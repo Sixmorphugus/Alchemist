@@ -15,10 +15,13 @@
 #include <SDL_ttf.h>
 #endif
 
-#include <stdio.h>
+#include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <cassert>
+#include <memory>
+#include <filesystem>
 
 using namespace std;

@@ -7,11 +7,19 @@ if(CMAKE_SYSTEM_NAME MATCHES "Emscripten")
 	add_compile_definitions(IS_WEB=1)
 	set(IS_WEB 1)
 	
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS=['png'] -s USE_SDL_TTF=2 -std=c++11 --preload-file ${CMAKE_SOURCE_DIR}/Resources@/Resources --shell-file ${CMAKE_SOURCE_DIR}/Source/HTML/Shell.html")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS=['png'] -s USE_SDL_TTF=2 -std=c++17 --preload-file ${CMAKE_SOURCE_DIR}/Resources@/Resources --shell-file ${CMAKE_SOURCE_DIR}/Source/HTML/Shell.html")
 	
 	set(CMAKE_EXECUTABLE_SUFFIX .html)
 else()
 	message(STATUS "We seem to be building for the desktop.")
+	
+	if (MSVC_VERSION GREATER_EQUAL "1900")
+		include(CheckCXXCompilerFlag)
+		CHECK_CXX_COMPILER_FLAG("/std:c++latest" _cpp_latest_flag_supported)
+		if (_cpp_latest_flag_supported)
+			add_compile_options("/std:c++latest")
+		endif()
+	endif()
 	
 	add_compile_definitions(IS_WEB=0)
 	set(IS_WEB 0)

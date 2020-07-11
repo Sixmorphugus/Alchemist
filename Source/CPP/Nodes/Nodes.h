@@ -6,6 +6,8 @@
 #include "Variables.h"
 #include "2DPositioning.h"
 
+class Alchemist;
+
 /**
  * Node class.
  * Provides:
@@ -113,13 +115,13 @@ private:
 
 public:
 	/** Draws the node somewhere on-screen. */
-	void Draw(SDL_Renderer* Renderer, Point Position) const;
+	void Draw(Alchemist* Instance, Point Position) const;
 
 	/** Returns the node's ID to the NodeManager that manages it. */
-	size_t GetID() { return ID; }
+	int GetID() { return ID; }
 	
 private:
-	size_t ID;
+	int ID;
 	
 	// TODO Erlang code emit
 };
@@ -146,8 +148,34 @@ public:
 	/** Creates a node with the given ID. Remember, positive IDs give the built-in nodes, negative ones give user-created ones. */
 	Node* CreateNode(int NodeID) const;
 
+	/** Finds the node matching the given class and creates it. */
+	template<class NodeClass>
+	Node* CreateNode() const
+	{
+		return Get<NodeClass>()->Clone();
+	}
+
 	/** Returns the default object for a node. Don't let the user place this one! */
 	Node* Get(int NodeID) const;
+
+	/** Returns the default object for a node given a class. Don't let the user place this one! */
+	template<class NodeClass>
+	Node* Get() const
+	{
+		vector<Node*> AllNodes = GetAll();
+
+		for(Node* Node : AllNodes)
+		{
+			NodeClass* NodeCasted = dynamic_cast<NodeClass*>(Node);
+
+			if(NodeCasted)
+			{
+				return NodeCasted;
+			}
+		}
+
+		return nullptr;
+	}
 
 	/** Returns a vector of every node registered. */
 	vector<Node*> GetAll() const;
@@ -175,6 +203,7 @@ public:
  */
 class NodeRegistrar
 {
+public:
 	NodeRegistrar(Node* NodeType);
 };
 

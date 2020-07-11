@@ -2,7 +2,7 @@
 
 #include "Alchemist.h"
 
-#include <cassert>
+#include "Nodes/Special/Node_Root.h"
 
 int main(int argc, char* argv[])
 {
@@ -47,12 +47,15 @@ Alchemist::Alchemist()
 	assert(SDL_CreateWindowAndRenderer(_GetWindowStartSize().X, _GetWindowStartSize().Y, 0, &Window, &Renderer) == 0);
 	
 	SDL_SetWindowResizable(Window, SDL_TRUE);
+
+	// Load resources
+	Resources.LoadResources(this);
 	
 	// Get window surface
 	WindowSurface = SDL_GetWindowSurface(Window);
 
-	// Load resources
-	Font = TTF_OpenFont("Resources/Font.ttf", 24);
+	// Create a node
+	CreateNode<Node_Root>(Point(0, 0));
 }
 
 Alchemist::~Alchemist()
@@ -156,18 +159,31 @@ void Alchemist::Frame()
 	SDL_RenderDrawLine(Renderer, ViewTopLeft.X, -ViewTopLeft.Y, Width, -ViewTopLeft.Y);
 	SDL_RenderDrawLine(Renderer, -ViewTopLeft.X, ViewTopLeft.Y, -ViewTopLeft.X, Height);
 
+	// Draw nodes
+	for(int i = 0; i < (int)NodesOnGrid.size(); i++)
+	{
+		Point Position = GridReverseLookup[i];
+		Node* NodeOnGrid = NodesOnGrid[i];
+
+		// Grid position to screen position
+		Point ScreenPosition = GridToScreen(Position);
+
+		// Draw
+		NodeOnGrid->Draw(this, ScreenPosition);
+	}
+
 	// Finish
 	SDL_RenderPresent(Renderer);
 }
 
 Point Alchemist::ScreenToGraph(const Point& ScreenPosition)
 {
-	return ScreenPosition - ViewTopLeft;
+	return ScreenPosition + ViewTopLeft;
 }
 
 Point Alchemist::GraphToScreen(const Point& GraphPosition)
 {
-	return GraphPosition + ViewTopLeft;
+	return GraphPosition - ViewTopLeft;
 }
 
 Point Alchemist::GraphToGrid(const Point& GraphPosition)
@@ -180,6 +196,16 @@ Point Alchemist::GridToGraph(const Point& GridPosition)
 	return GridPosition * GridSize;
 }
 
+Point Alchemist::GridToScreen(const Point& GridPosition)
+{
+	return GraphToScreen(GridToGraph(GridPosition));
+}
+
+Point Alchemist::ScreenToGrid(const Point& ScreenPosition)
+{
+	return GraphToGrid(ScreenToGraph(ScreenPosition));
+}
+
 #if IS_WEB
 EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
 {
@@ -187,6 +213,67 @@ EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
 	return EM_TRUE;
 }
 #endif
+
+void Alchemist::PlaceNode(Node* NewNode, const Point& Position)
+{
+	// Is this node on the grid already? (i.e. being moved)
+	int Found = -1;
+	
+	for(int i = 0; i < NodesOnGrid.size(); i++)
+	{
+		if(NodesOnGrid[i] == NewNode)
+		{
+			// We need to remove the lookup table entries.
+			Point PreviousPosition = GridReverseLookup[i];
+
+			if(PreviousPosition == Position)
+			{
+				// Stop! Do nothing if the node is where we want it already.
+				return;
+			}
+			
+			GridReverseLookup.erase(GridReverseLookup.find(i));
+			GridLookup.erase(GridLookup.find(PreviousPosition));
+
+			Found = i;
+			
+			break;
+		}
+	}
+
+	// Add if not found
+	if(Found == -1)
+	{
+		NodesOnGrid.push_back(NewNode);
+		Found = (int)NodesOnGrid.size() - 1;
+	}
+
+	// Add to lookups
+	GridLookup[Position] = Found;
+	GridReverseLookup[Found] = Position;
+}
+
+Node* Alchemist::GetNodeAt(const Point& Position) const
+{
+	auto Found = GridLookup.find(Position);
+
+	if(Found != GridLookup.end())
+	{
+		return GetNode(Found->second);
+	}
+
+	return nullptr;
+}
+
+Node* Alchemist::GetNode(int ID) const
+{
+	return NodesOnGrid[ID];
+}
+
+void Alchemist::RemoveNode(int ID)
+{
+	// TODO
+}
 
 Size Alchemist::_GetWindowStartSize()
 {

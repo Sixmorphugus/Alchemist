@@ -1,8 +1,8 @@
 // Copyright Chris Sixsmith 2020.
 
 #include "Nodes.h"
-
-#include <cassert>
+#include "DrawShapes.h"
+#include "Alchemist.h"
 
 Node::Node()
 {
@@ -64,7 +64,7 @@ void Node::RegisterArgument(VarType Type, const string& ArgumentName)
 	ArgumentData.push_back(NodeArgumentData{ Type, ArgumentName, nullptr });
 }
 
-void Node::Draw(SDL_Renderer* Renderer, Point Position) const
+void Node::Draw(Alchemist* Instance, Point Position) const
 {
 	// For default node drawing code, draw a circle.
 	
@@ -73,6 +73,7 @@ void Node::Draw(SDL_Renderer* Renderer, Point Position) const
 
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
+
 
 vector<Node*> StaticNodes;
 
@@ -155,6 +156,6 @@ vector<string> NodeManager::GetCategories() const
 
 NodeRegistrar::NodeRegistrar(Node* NodeType)
 {
-	NodeType->ID = StaticNodes.size();
+	NodeType->ID = (int)StaticNodes.size();
 	StaticNodes.push_back(NodeType);
 }
