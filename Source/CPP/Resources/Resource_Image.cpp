@@ -13,7 +13,7 @@ Resource_Image::~Resource_Image()
 
 bool Resource_Image::Load(Alchemist* Instance, string FileName)
 {
-	SDL_Surface* Surface = IMG_Load(("Resources" + FileName).c_str());
+	SDL_Surface* Surface = IMG_Load(("Resources/" + FileName).c_str());
 
 	if(!Surface)
 	{
@@ -28,4 +28,4 @@ bool Resource_Image::Load(Alchemist* Instance, string FileName)
 	return true;
 }
 
-DECLARE_RESOURCE(Resource_Image, { "png" });
+DECLARE_RESOURCE(Resource_Image, { ".png" });

@@ -2,7 +2,12 @@
 
 #include "Resources.h"
 
-static vector<ResourceFactoryBase*> StaticFactories;
+vector<ResourceFactoryBase*>& GetStaticFactories()
+{
+	static vector<ResourceFactoryBase*> Factories;
+
+	return Factories;
+}
 
 
 void ResourceManager::LoadResources(Alchemist* Instance)
@@ -11,13 +16,12 @@ void ResourceManager::LoadResources(Alchemist* Instance)
 	// When we get a match, load the resource.
 	for (const auto& p : filesystem::directory_iterator("Resources"))
 	{
-		cout << p.path() << endl;
-		
-		for (ResourceFactoryBase* Factory : StaticFactories)
+		for (ResourceFactoryBase* Factory : GetStaticFactories())
 		{
 			for (const string& Extension : Factory->GetSupportedFileExtensions())
 			{
-				if (Extension == p.path().extension())
+				string FoundExtension = p.path().extension().string();
+				if (Extension == FoundExtension)
 				{
 					string Name = p.path().filename().string();
 					if (shared_ptr<Resource> Resource = Factory->CreateResource(Instance, Name, p.path().filename().string()))
@@ -52,5 +56,5 @@ shared_ptr<Resource> ResourceManager::GetResource(string Name)
 
 ResourceRegistrar::ResourceRegistrar(ResourceFactoryBase* FactoryIn)
 {
-	StaticFactories.push_back(FactoryIn);
+	GetStaticFactories().push_back(FactoryIn);
 }
