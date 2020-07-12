@@ -10,6 +10,10 @@ vector<ResourceFactoryBase*>& GetStaticFactories()
 }
 
 
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
+
 void ResourceManager::LoadResources(Alchemist* Instance)
 {
 	// Iterate the resources folder and look for a factory that supports the extension for each file we find.
