@@ -8,6 +8,8 @@
 
 class Alchemist;
 
+// todo adapt to shared_ptr (i.e. stop using dumb ptr)
+
 /**
  * Node class.
  * Provides:
@@ -24,7 +26,7 @@ public:
 	Node();
 	
 	/** Makes a copy of this node. */
-	virtual Node* Clone() const = 0;
+	virtual shared_ptr<Node> Clone() const = 0;
 
 	friend class NodeManager;
 	friend class NodeRegistrar;
@@ -88,10 +90,10 @@ public:
 
 public:
 	/** Returns given argument's connector. */
-	Node* GetConnector(int Argument) const;
+	shared_ptr<Node> GetConnector(int Argument) const;
 
 	/** Sets given argument's connector, if allowed. */
-	bool SetConnector(Node* From, int Argument);
+	bool SetConnector(const shared_ptr<Node>& From, int Argument);
 
 	/** Destroys a connector. */
 	void DisconnectConnector(int Argument);
@@ -146,45 +148,40 @@ public:
 	NodeManager& operator=(const NodeManager&);
 
 	/** Creates a node with the given ID. Remember, positive IDs give the built-in nodes, negative ones give user-created ones. */
-	Node* CreateNode(int NodeID) const;
+	shared_ptr<Node> CreateNode(int NodeID) const;
 
 	/** Finds the node matching the given class and creates it. */
 	template<class NodeClass>
-	Node* CreateNode() const
+	shared_ptr<NodeClass> CreateNode() const
 	{
-		return Get<NodeClass>()->Clone();
+		return dynamic_pointer_cast<NodeClass>(Get<NodeClass>()->Clone());
 	}
 
 	/** Returns the default object for a node. Don't let the user place this one! */
-	Node* Get(int NodeID) const;
+	shared_ptr<Node> Get(int NodeID) const;
 
 	/** Returns the default object for a node given a class. Don't let the user place this one! */
 	template<class NodeClass>
-	Node* Get() const
+	shared_ptr<NodeClass> Get() const
 	{
-		vector<Node*> AllNodes = GetAll();
+		vector<shared_ptr<Node>> AllNodes = GetAll();
 
-		for(Node* Node : AllNodes)
+		for(const shared_ptr<Node>& NodeInstance : AllNodes)
 		{
-			NodeClass* NodeCasted = dynamic_cast<NodeClass*>(Node);
-
-			if(NodeCasted)
-			{
-				return NodeCasted;
-			}
+			return dynamic_pointer_cast<NodeClass>(NodeInstance);
 		}
 
 		return nullptr;
 	}
 
 	/** Returns a vector of every node registered. */
-	vector<Node*> GetAll() const;
+	vector<shared_ptr<Node>> GetAll() const;
 
 	/**
 	 * Returns a vector of every node, filtered to a specific category.
 	 * Note that this is slow as it isn't using an acceleration structure yet.
 	 */
-	vector<Node*> GetAll(string Category) const;
+	vector<shared_ptr<Node>> GetAll(string Category) const;
 
 	/**
 	 * Returns all categories that exist.
@@ -204,7 +201,7 @@ public:
 class NodeRegistrar
 {
 public:
-	NodeRegistrar(Node* NodeType);
+	NodeRegistrar(const shared_ptr<Node>& NodeType);
 };
 
-#define DECLARE_NODE(NodeClassName, NodeDefinition) NodeRegistrar NodeClassName ## Def (new NodeDefinition);
+#define DECLARE_NODE(NodeClass, ...) NodeRegistrar NodeClass ## Def (make_shared<NodeClass>(__VA_ARGS__));

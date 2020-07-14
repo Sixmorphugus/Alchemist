@@ -163,7 +163,7 @@ void Alchemist::Frame()
 	for(int i = 0; i < (int)NodesOnGrid.size(); i++)
 	{
 		Point Position = GridReverseLookup[i];
-		Node* NodeOnGrid = NodesOnGrid[i];
+		shared_ptr<Node> NodeOnGrid = NodesOnGrid[i];
 
 		// Grid position to screen position
 		Point ScreenPosition = GridToScreen(Position);
@@ -214,7 +214,7 @@ EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
 }
 #endif
 
-void Alchemist::PlaceNode(Node* NewNode, const Point& Position)
+void Alchemist::PlaceNode(shared_ptr<Node> NewNode, const Point& Position)
 {
 	// Is this node on the grid already? (i.e. being moved)
 	int Found = -1;
@@ -253,7 +253,7 @@ void Alchemist::PlaceNode(Node* NewNode, const Point& Position)
 	GridReverseLookup[Found] = Position;
 }
 
-Node* Alchemist::GetNodeAt(const Point& Position) const
+shared_ptr<Node> Alchemist::GetNodeAt(const Point& Position) const
 {
 	auto Found = GridLookup.find(Position);
 
@@ -265,7 +265,7 @@ Node* Alchemist::GetNodeAt(const Point& Position) const
 	return nullptr;
 }
 
-Node* Alchemist::GetNode(int ID) const
+shared_ptr<Node> Alchemist::GetNode(int ID) const
 {
 	return NodesOnGrid[ID];
 }

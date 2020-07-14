@@ -34,13 +34,13 @@ int Node::GetArgumentIndexFromName(const string& ArgumentName) const
 	return -1;
 }
 
-Node* Node::GetConnector(int Argument) const
+shared_ptr<Node> Node::GetConnector(int Argument) const
 {
 	assert(Argument > 0 && Argument < ArgumentData.size());
 	return ArgumentData[Argument].Connector;
 }
 
-bool Node::SetConnector(Node* From, int Argument)
+bool Node::SetConnector(const shared_ptr<Node>& From, int Argument)
 {
 	// Still counts as an assertion failure if we provide an invalid index
 	assert(Argument > 0 && Argument < ArgumentData.size());
@@ -75,7 +75,11 @@ void Node::Draw(Alchemist* Instance, Point Position) const
 /////////////////////////////////////////////////////////////////////
 
 
-vector<Node*> StaticNodes;
+vector<shared_ptr<Node>>& GetStaticNodes()
+{
+	static vector<shared_ptr<Node>> StaticNodes;
+	return StaticNodes;
+}
 
 NodeManager::NodeManager()
 {
@@ -85,18 +89,18 @@ NodeManager::~NodeManager()
 {
 }
 
-Node* NodeManager::CreateNode(int NodeID) const
+shared_ptr<Node> NodeManager::CreateNode(int NodeID) const
 {
 	return Get(NodeID)->Clone();
 }
 
-Node* NodeManager::Get(int NodeID) const
+shared_ptr<Node> NodeManager::Get(int NodeID) const
 {
 	if (NodeID >= 0)
 	{
 		// Return from the static nodes list.
-		assert(NodeID < StaticNodes.size());
-		return StaticNodes[NodeID];
+		assert(NodeID < GetStaticNodes().size());
+		return GetStaticNodes()[NodeID];
 	}
 	else
 	{
@@ -107,23 +111,23 @@ Node* NodeManager::Get(int NodeID) const
 	return nullptr;
 }
 
-vector<Node*> NodeManager::GetAll() const
+vector<shared_ptr<Node>> NodeManager::GetAll() const
 {
 	// TODO account for user-created
-	return StaticNodes;
+	return GetStaticNodes();
 }
 
-vector<Node*> NodeManager::GetAll(string Category) const
+vector<shared_ptr<Node>> NodeManager::GetAll(string Category) const
 {
-	vector<Node*> All = GetAll();
+	vector<shared_ptr<Node>> All = GetAll();
 
-	vector<Node*> Out;
+	vector<shared_ptr<Node>> Out;
 
-	for(Node* Node : All)
+	for(const shared_ptr<Node>& NodeInstance : All)
 	{
-		if(Node->GetCategory() == Category)
+		if(NodeInstance->GetCategory() == Category)
 		{
-			Out.push_back(Node);
+			Out.push_back(NodeInstance);
 		}
 	}
 
@@ -132,13 +136,13 @@ vector<Node*> NodeManager::GetAll(string Category) const
 
 vector<string> NodeManager::GetCategories() const
 {
-	vector<Node*> All = GetAll();
+	vector<shared_ptr<Node>> All = GetAll();
 
 	vector<string> Out;
 
-	for (Node* Node : All)
+	for (shared_ptr<Node> NodeInstance : All)
 	{
-		string Category = Node->GetCategory();
+		string Category = NodeInstance->GetCategory();
 
 		if(find(Out.begin(), Out.end(), Category) == Out.end())
 		{
@@ -154,8 +158,8 @@ vector<string> NodeManager::GetCategories() const
 /////////////////////////////////////////////////////////////////////
 
 
-NodeRegistrar::NodeRegistrar(Node* NodeType)
+NodeRegistrar::NodeRegistrar(const shared_ptr<Node>& NodeType)
 {
-	NodeType->ID = (int)StaticNodes.size();
-	StaticNodes.push_back(NodeType);
+	NodeType->ID = (int)GetStaticNodes().size();
+	GetStaticNodes().push_back(NodeType);
 }

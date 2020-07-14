@@ -41,5 +41,5 @@ struct NodeArgumentData
 	string ArgumentName;
 
 	/** Node linked from. */
-	Node* Connector = nullptr;
+	shared_ptr<Node> Connector = nullptr;
 };

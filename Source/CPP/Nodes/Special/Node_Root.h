@@ -6,8 +6,9 @@
 
 class Node_Root : public Node
 {
+public:
 	// Node interface.
-	virtual Node* Clone() const override;
+	virtual shared_ptr<Node> Clone() const override;
 	virtual string GetDisplayName() const override;
 	virtual VarType GetReturnType() const override;
 	// End of Node interface.
