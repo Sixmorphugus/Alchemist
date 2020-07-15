@@ -3,8 +3,10 @@
 #include "Nodes.h"
 #include "DrawShapes.h"
 #include "Alchemist.h"
+#include "Resources/Resource_Image.h"
 
 Node::Node()
+	: ID(-1)
 {
 	// Nothing to do here!
 	// Use the node constructor to register arguments.
@@ -64,10 +66,24 @@ void Node::RegisterArgument(VarType Type, const string& ArgumentName)
 	ArgumentData.push_back(NodeArgumentData{ Type, ArgumentName, nullptr });
 }
 
-void Node::Draw(Alchemist* Instance, Point Position) const
+void Node::Draw(Alchemist* Instance, const Point& Position, bool IsPreview) const
 {
-	// For default node drawing code, draw a circle.
-	
+	shared_ptr<Resource_Image> RingResource = Instance->GetResourceManager()->GetResource<Resource_Image>("NodeRing.png");
+	shared_ptr<Resource_Image> NodeResource = Instance->GetResourceManager()->GetResource<Resource_Image>("Node.png");
+
+	assert(RingResource);
+	assert(NodeResource);
+
+	SDL_SetTextureAlphaMod(RingResource->GetTexture(), IsPreview ? 150 : 255);
+	SDL_SetTextureAlphaMod(NodeResource->GetTexture(), IsPreview ? 150 : 255);
+
+	SDL_RenderCopy(Instance->GetRenderer(), RingResource->GetTexture(), NULL, &GetRenderRect(Position));
+	SDL_RenderCopy(Instance->GetRenderer(), NodeResource->GetTexture(), NULL, &GetRenderRect(Position));
+}
+
+SDL_Rect Node::GetRenderRect(const Point& Position) const
+{
+	return SDL_Rect{Position.X, Position.Y, GridSize, GridSize};
 }
 
 
@@ -81,11 +97,12 @@ vector<shared_ptr<Node>>& GetStaticNodes()
 	return StaticNodes;
 }
 
-NodeManager::NodeManager()
-{
-}
 
-NodeManager::~NodeManager()
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+
+
+NodeManager::NodeManager()
 {
 }
 

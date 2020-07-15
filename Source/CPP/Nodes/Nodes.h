@@ -117,7 +117,10 @@ private:
 
 public:
 	/** Draws the node somewhere on-screen. */
-	void Draw(Alchemist* Instance, Point Position) const;
+	void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const;
+
+	/** Gets the screen rectangle where this node is drawn given a draw position. */
+	virtual SDL_Rect GetRenderRect(const Point& Position) const;
 
 	/** Returns the node's ID to the NodeManager that manages it. */
 	int GetID() { return ID; }
@@ -141,7 +144,6 @@ class NodeManager
 {
 public:
 	NodeManager();
-	~NodeManager();
 
 	// Non copyable!
 	NodeManager(const NodeManager&);

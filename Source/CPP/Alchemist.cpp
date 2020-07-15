@@ -97,26 +97,45 @@ void Alchemist::Frame()
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
-				if (Event.button.button == 2)
+				if (Event.button.button == 3)
 				{
-					printf("Drag start\n");
 					ViewDrag = true;
+				}
+				else if(Event.button.button == 1)
+				{
+					// Look for a node under the mouse.
+					// If there is one, begin dragging it.
+					Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
+					NodeOnMouse = GetNodeAt(MouseGridPosition);
 				}
 
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
-				if (Event.button.button == 2)
+				if (Event.button.button == 3)
 				{
-					printf("Drag stop\n");
 					ViewDrag = false;
+				}
+				else if (Event.button.button == 1)
+				{
+					// If there is a node on the mouse, and the grid space below the mouse is clear, insert the node there.
+					if (NodeOnMouse)
+					{
+						Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
+						PlaceNode(NodeOnMouse, MouseGridPosition);
+
+						NodeOnMouse.reset();
+					}
 				}
 
 				break;
 			}
 			case SDL_MOUSEMOTION:
 			{
+				MousePos.X = Event.motion.x;
+				MousePos.Y = Event.motion.y;
+
 				if (ViewDrag)
 				{
 					ViewTopLeft.X -= Event.motion.xrel;
@@ -169,7 +188,28 @@ void Alchemist::Frame()
 		Point ScreenPosition = GridToScreen(Position);
 
 		// Draw
-		NodeOnGrid->Draw(this, ScreenPosition);
+		NodeOnGrid->Draw(this, ScreenPosition, NodeOnGrid == NodeOnMouse);
+	}
+
+	// Draw node being dragged
+	if (NodeOnMouse)
+	{
+		// Show a transparent preview of the node being dragged;
+		// Hilight the grid space hovered in blue if empty, or red if occupied.
+		// If the hovered grid space is empty, lock the node to it, otherwise move it exactly to the position of the mouse.
+		Point DrawPos = MousePos;
+
+		Point MouseGridPosition = ScreenToGrid(MousePos);
+		shared_ptr<Node> NodeUnderMouse = GetNodeAt(MouseGridPosition);
+
+		if (!NodeUnderMouse || NodeUnderMouse == NodeOnMouse)
+		{
+			DrawPos = GridToScreen(MouseGridPosition);
+		}
+
+		NodeOnMouse->Draw(this, DrawPos, true);
+
+		// TODO colored rect
 	}
 
 	// Finish
@@ -214,8 +254,14 @@ EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
 }
 #endif
 
-void Alchemist::PlaceNode(shared_ptr<Node> NewNode, const Point& Position)
+bool Alchemist::PlaceNode(shared_ptr<Node> NewNode, const Point& Position)
 {
+	if (GetNodeAt(Position))
+	{
+		// Space is occupied already
+		return false;
+	}
+
 	// Is this node on the grid already? (i.e. being moved)
 	int Found = -1;
 	
@@ -229,7 +275,7 @@ void Alchemist::PlaceNode(shared_ptr<Node> NewNode, const Point& Position)
 			if(PreviousPosition == Position)
 			{
 				// Stop! Do nothing if the node is where we want it already.
-				return;
+				return true;
 			}
 			
 			GridReverseLookup.erase(GridReverseLookup.find(i));
@@ -251,6 +297,8 @@ void Alchemist::PlaceNode(shared_ptr<Node> NewNode, const Point& Position)
 	// Add to lookups
 	GridLookup[Position] = Found;
 	GridReverseLookup[Found] = Position;
+
+	return true;
 }
 
 shared_ptr<Node> Alchemist::GetNodeAt(const Point& Position) const

@@ -66,8 +66,11 @@ public:
 		return NewNode;
 	}
 
-	/** Places a given node at a given grid position. If it is already on the grid, it gets removed first. */
-	void PlaceNode(shared_ptr<Node> NewNode, const Point& Position);
+	/**
+	 * Places a given node at a given grid position. If it is already on the grid, it gets removed first.
+	 * Returns true on success, false if something was in the way.
+	 */
+	bool PlaceNode(shared_ptr<Node> NewNode, const Point& Position);
 
 	/** Returns the node at the specified grid position, if there is any. */
 	shared_ptr<Node> GetNodeAt(const Point& Position) const;
@@ -96,6 +99,7 @@ private:
 	bool ViewDrag = false;
 
 	Point ViewTopLeft;
+	Point MousePos;
 	
 	SDL_Window* Window;
 	SDL_Renderer* Renderer;
@@ -104,7 +108,8 @@ private:
 	NodeManager Nodes;
 	ResourceManager Resources;
 
-	vector<shared_ptr<Node>> NodesOnGrid; // nodes we manage
+	shared_ptr<Node> NodeOnMouse;
+	vector<shared_ptr<Node>> NodesOnGrid;
 	unordered_map<Point, int> GridLookup; // for looking up nodes from grid positions
 	unordered_map<int, Point> GridReverseLookup; // for looking up grid positions from nodes
 };
