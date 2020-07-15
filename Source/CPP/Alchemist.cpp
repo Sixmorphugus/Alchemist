@@ -47,6 +47,7 @@ Alchemist::Alchemist()
 	assert(SDL_CreateWindowAndRenderer(_GetWindowStartSize().X, _GetWindowStartSize().Y, 0, &Window, &Renderer) == 0);
 	
 	SDL_SetWindowResizable(Window, SDL_TRUE);
+	SDL_SetRenderDrawBlendMode(Renderer, SDL_BLENDMODE_BLEND);
 
 	// Load resources
 	Resources.LoadResources(this);
@@ -56,6 +57,7 @@ Alchemist::Alchemist()
 
 	// Create a node
 	CreateNode<Node_Root>(Point(0, 0));
+	CreateNode<Node_Root>(Point(1, 0));
 }
 
 Alchemist::~Alchemist()
@@ -200,16 +202,24 @@ void Alchemist::Frame()
 		Point DrawPos = MousePos;
 
 		Point MouseGridPosition = ScreenToGrid(MousePos);
+		Point GridPos = GridToScreen(MouseGridPosition);
 		shared_ptr<Node> NodeUnderMouse = GetNodeAt(MouseGridPosition);
 
 		if (!NodeUnderMouse || NodeUnderMouse == NodeOnMouse)
 		{
-			DrawPos = GridToScreen(MouseGridPosition);
+			DrawPos = GridPos;
+			SDL_SetRenderDrawColor(Renderer, 100, 100, 255, 100);
+		}
+		else
+		{
+			SDL_SetRenderDrawColor(Renderer, 255, 100, 100, 100);
 		}
 
-		NodeOnMouse->Draw(this, DrawPos, true);
+		SDL_Rect Rect{GridPos.X, GridPos.Y, GridSize, GridSize};
 
-		// TODO colored rect
+		SDL_RenderFillRect(Renderer, &Rect);
+
+		NodeOnMouse->Draw(this, DrawPos, true);
 	}
 
 	// Finish

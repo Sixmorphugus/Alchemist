@@ -11,5 +11,6 @@ public:
 	virtual shared_ptr<Node> Clone() const override;
 	virtual string GetDisplayName() const override;
 	virtual VarType GetReturnType() const override;
+	virtual void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const override;
 	// End of Node interface.
 };

@@ -4,19 +4,19 @@
 
 #include "Resources.h"
 
-/** Image Resource class. */
-class Resource_Image : public Resource
+/** Font Resource class. */
+class Resource_Font : public Resource
 {
 public:
-	Resource_Image() = default;
-	~Resource_Image();
-	
+	Resource_Font() = default;
+	~Resource_Font();
+
 	/** Handles loading the resource file. */
 	virtual bool Load(Alchemist* Instance, string FileName) override;
 
 	/** Returns the loaded texture. */
-	SDL_Texture* GetTexture() { return Texture; }
+	TTF_Font* GetFont() { return Font; }
 
 private:
-	SDL_Texture* Texture = nullptr;
+	TTF_Font* Font = nullptr;
 };
