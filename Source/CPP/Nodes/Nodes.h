@@ -24,17 +24,18 @@ class Node
 {
 public:
 	Node();
-	
+
 	/** Makes a copy of this node. */
 	virtual shared_ptr<Node> Clone() const = 0;
 
 	friend class NodeManager;
 	friend class NodeRegistrar;
+	friend class Function;
 
-	
-// Metadata.
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
+
+	// Metadata.
+	/////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////
 
 
 public:
@@ -44,14 +45,11 @@ public:
 	/** Returns node's category. If this returns "", the node will be hidden from all menus. */
 	virtual string GetCategory() const { return ""; }
 
-	/** Return's node's subcategory. If this returns "", the node will be hidden from all menus. */
-	virtual string GetSubCategory() const { return ""; }
-	
-	
-// Serialisation. Note that most nodes have no special data.
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
-	
+
+	// Serialisation. Note that most nodes have no special data.
+	/////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////
+
 
 public:
 	/** Loads the node's data from a file. */
@@ -61,23 +59,20 @@ public:
 	virtual void Save(const ofstream& FileStream) const {}
 
 	/** Returns the size this node will use for its serialised data packet in an .ALCH file. */
-	virtual size_t GetDataSize() { return 0; }
+	virtual size_t GetDataSize() const { return 0; }
 
 
-// Variable Data.
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
+	// Variable Data.
+	/////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////
 
 
 public:
-	/** Gets return type for this node. */
-	virtual VarType GetReturnType() const = 0;
-
 	/** Returns this node's argument count. */
 	size_t GetNumArguments() const { return ArgumentData.size(); }
 
 	/** Returns given argument's argument type. */
-	VarType GetArgumentType(int Argument) const;
+	bool GetArgumentIsPattern(int Argument) const;
 
 	/** Returns given argument's argument name. */
 	string GetArgumentName(int Argument) const;
@@ -103,16 +98,16 @@ protected:
 	 * Registers an argument. Call this in your node class's constructor.
 	 * 2 arguments can't have the same name!
 	 */
-	void RegisterArgument(VarType Type, const string& ArgumentName);
-	
+	void RegisterArgument(const string& ArgumentName, bool IsPattern = false);
+
 private:
 	vector<NodeArgumentData> ArgumentData;
 	unordered_map<string, int> ArgumentLookupTable;
-	
 
-// Misc.
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
+
+	// Misc.
+	/////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////
 
 
 public:
@@ -124,11 +119,31 @@ public:
 
 	/** Returns the node's ID to the NodeManager that manages it. */
 	int GetID() { return ID; }
+
+	/** Returns the function the node is inside. */
+	Function* GetFunction() { return NodeFunction; }
+
+	/** Return's the node's cached grid position. */
+	Point GetGridPosition() { return GridPosition; }
+
+protected:
+	/** Triggers when an instance of the node is placed in a function. */
+	virtual void OnPlaced() {}
 	
 private:
 	int ID;
+	Function* NodeFunction;
+	Point GridPosition;
 	
 	// TODO Erlang code emit
+};
+
+
+/** NodeManager category. */
+struct Category
+{
+	string Name;
+	vector<shared_ptr<Node>> Nodes;
 };
 
 
@@ -189,7 +204,7 @@ public:
 	 * Returns all categories that exist.
 	 * Note that this is slow as it isn't using an acceleration structure yet.
 	 */
-	vector<string> GetCategories() const;
+	vector<Category> GetCategorisedNodes() const;
 	
 	// TODO user function registration.
 };
@@ -206,4 +221,4 @@ public:
 	NodeRegistrar(const shared_ptr<Node>& NodeType);
 };
 
-#define DECLARE_NODE(NodeClass, ...) NodeRegistrar NodeClass ## Def (make_shared<NodeClass>(__VA_ARGS__));
+#define DECLARE_NODE(NodeClass, ...) NodeRegistrar NodeClass ## Def (make_shared<NodeClass>(__VA_ARGS__))

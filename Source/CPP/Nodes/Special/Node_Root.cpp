@@ -3,21 +3,21 @@
 #include "Node_Root.h"
 #include "Resources/Resource_Image.h"
 #include "Resources/Resource_Font.h"
+#include "Module/Function.h"
 #include "Alchemist.h"
+
+Node_Root::Node_Root()
+{
+	// Register return argument.
+	RegisterArgument("ReturnValue");
+
+	// Register guard
+	RegisterArgument("Guard");
+}
 
 shared_ptr<Node> Node_Root::Clone() const
 {
 	return make_shared<Node_Root>(*this);
-}
-
-string Node_Root::GetDisplayName() const
-{
-	return "Root";
-}
-
-VarType Node_Root::GetReturnType() const
-{
-	return VarType::Invalid;
 }
 
 void Node_Root::Draw(Alchemist* Instance, const Point& Position, bool IsPreview) const
@@ -38,6 +38,15 @@ void Node_Root::Draw(Alchemist* Instance, const Point& Position, bool IsPreview)
 	SDL_SetTextureAlphaMod(ArobaseResource->GetTexture(), IsPreview ? 150 : 255);
 
 	SDL_RenderCopy(Instance->GetRenderer(), ArobaseResource->GetTexture(), NULL, &GetRenderRect(Position));
+}
+
+void Node_Root::OnPlaced()
+{
+	// Create pattern arguments according to function arity.
+	for (int i = 0; i < GetFunction()->GetArity(); i++)
+	{
+		RegisterArgument(string("ArgPattern") + to_string(i), true);
+	}
 }
 
 DECLARE_NODE(Node_Root);

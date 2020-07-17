@@ -4,6 +4,8 @@
 
 #include "Resources.h"
 
+// TODO generation of font textures, font texture cache
+
 /** Font Resource class. */
 class Resource_Font : public Resource
 {

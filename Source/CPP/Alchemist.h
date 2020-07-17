@@ -6,8 +6,14 @@
 #include "2DPositioning.h"
 #include "Nodes/Nodes.h"
 #include "Resources/Resources.h"
+#include "Module/Module.h"
 
 const int GridSize = 64;
+const int SidebarWidth = 400;
+const int SidebarItemCount = 4;
+const int SidebarPadding = (SidebarWidth - (SidebarItemCount * GridSize)) / 8;
+
+class Function;
 
 class Alchemist
 {
@@ -30,56 +36,25 @@ public:
 #endif
 
 	/** Converts screen position to graph position. */
-	Point ScreenToGraph(const Point& ScreenPosition);
+	Point ScreenToGraph(const Point& ScreenPosition) const;
 
 	/** Converts graph position to screen position. */
-	Point GraphToScreen(const Point& GraphPosition);
+	Point GraphToScreen(const Point& GraphPosition) const;
 
 	/** Converts graph position to grid position. */
-	Point GraphToGrid(const Point& GraphPosition);
+	Point GraphToGrid(const Point& GraphPosition) const;
 
 	/** Converts grid position to graph position. */
-	Point GridToGraph(const Point& GridPosition);
+	Point GridToGraph(const Point& GridPosition) const;
 
 	/** Converts grid position to screen position. */
-	Point GridToScreen(const Point& GridPosition);
+	Point GridToScreen(const Point& GridPosition) const;
 
 	/** Converts screen position to grid position. */
-	Point ScreenToGrid(const Point& ScreenPosition);
-	
-	/** Creates a node at the given grid position. */
-	shared_ptr<Node> CreateNode(int NodeID, const Point& Position)
-	{
-		shared_ptr<Node> NewNode = Nodes.CreateNode(NodeID);
-		PlaceNode(NewNode, Position);
+	Point ScreenToGrid(const Point& ScreenPosition) const;
 
-		return NewNode;
-	}
-
-	/** Finds the node matching the given class and creates it at the given grid position. */
-	template<class NodeClass>
-	shared_ptr<NodeClass> CreateNode(const Point& Position)
-	{
-		shared_ptr<NodeClass> NewNode = Nodes.CreateNode<NodeClass>();
-		PlaceNode(NewNode, Position);
-
-		return NewNode;
-	}
-
-	/**
-	 * Places a given node at a given grid position. If it is already on the grid, it gets removed first.
-	 * Returns true on success, false if something was in the way.
-	 */
-	bool PlaceNode(shared_ptr<Node> NewNode, const Point& Position);
-
-	/** Returns the node at the specified grid position, if there is any. */
-	shared_ptr<Node> GetNodeAt(const Point& Position) const;
-
-	/** Returns node with ID given. */
-	shared_ptr<Node> GetNode(int ID) const;
-
-	/** Deletes node with ID given. */
-	void RemoveNode(int ID);
+	/** Returns screen position of palette item, taking into account current Palette Scroll. */
+	Point GetPaletteItemPos(int Index) const;
 
 	/** Returns the renderer */
 	SDL_Renderer* GetRenderer() { return Renderer; }
@@ -89,14 +64,26 @@ public:
 
 	/** Returns the resource manager */
 	ResourceManager* GetResourceManager() { return &Resources; }
+
+	/** Returns the function being edited. */
+	shared_ptr<Function> GetCurrentFunction() { return CurrentFunction; }
+
+	/** Returns the module. */
+	Module* GetCurrentModule() { return &CurrentModule; }
 	
+	/** Returns window size. */
+	Size GetWindowSize() const;
+
 private:	
 	/** Gets window start size. */
-	Size _GetWindowStartSize();
+	Size _GetWindowStartSize() const;
 	
 private:
 	bool Close = false;
 	bool ViewDrag = false;
+
+	int PaletteScroll = 0;
+	int PaletteCategory = 0;
 
 	Point ViewTopLeft;
 	Point MousePos;
@@ -109,7 +96,7 @@ private:
 	ResourceManager Resources;
 
 	shared_ptr<Node> NodeOnMouse;
-	vector<shared_ptr<Node>> NodesOnGrid;
-	unordered_map<Point, int> GridLookup; // for looking up nodes from grid positions
-	unordered_map<int, Point> GridReverseLookup; // for looking up grid positions from nodes
+
+	Module CurrentModule;
+	shared_ptr<Function> CurrentFunction;
 };

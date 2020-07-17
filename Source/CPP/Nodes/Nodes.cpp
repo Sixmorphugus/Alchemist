@@ -12,10 +12,10 @@ Node::Node()
 	// Use the node constructor to register arguments.
 }
 
-VarType Node::GetArgumentType(int Argument) const
+bool Node::GetArgumentIsPattern(int Argument) const
 {
 	assert(Argument > 0 && Argument < ArgumentData.size());
-	return ArgumentData[Argument].ArgumentType;
+	return ArgumentData[Argument].IsPattern;
 }
 
 string Node::GetArgumentName(int Argument) const
@@ -60,10 +60,10 @@ void Node::DisconnectConnector(int Argument)
 	ArgumentData[Argument].Connector = nullptr;
 }
 
-void Node::RegisterArgument(VarType Type, const string& ArgumentName)
+void Node::RegisterArgument(const string& ArgumentName, bool IsPattern)
 {
 	assert(GetArgumentIndexFromName(ArgumentName) == -1);
-	ArgumentData.push_back(NodeArgumentData{ Type, ArgumentName, nullptr });
+	ArgumentData.push_back(NodeArgumentData{ ArgumentName, IsPattern, nullptr });
 }
 
 void Node::Draw(Alchemist* Instance, const Point& Position, bool IsPreview) const
@@ -151,20 +151,42 @@ vector<shared_ptr<Node>> NodeManager::GetAll(string Category) const
 	return Out;
 }
 
-vector<string> NodeManager::GetCategories() const
+vector<Category> NodeManager::GetCategorisedNodes() const
 {
 	vector<shared_ptr<Node>> All = GetAll();
 
-	vector<string> Out;
+	vector<Category> Out;
+	unordered_map<string, int> CategoryLookup;
 
 	for (shared_ptr<Node> NodeInstance : All)
 	{
-		string Category = NodeInstance->GetCategory();
-
-		if(find(Out.begin(), Out.end(), Category) == Out.end())
+		// Find category ID
+		string CategoryName = NodeInstance->GetCategory();
+		
+		if (CategoryName == "")
 		{
-			Out.push_back(Category);
+			continue;
 		}
+
+		auto FoundCategory = CategoryLookup.find(CategoryName);
+		int FoundCategoryId;
+
+		if (FoundCategory == CategoryLookup.end())
+		{
+			// Add a new category.
+			Out.push_back(Category{ CategoryName, {} });
+
+			FoundCategoryId = Out.size() - 1;
+
+			CategoryLookup[CategoryName] = FoundCategoryId;			
+		}
+		else
+		{
+			FoundCategoryId = FoundCategory->second;
+		}
+
+		// Add node to category
+		Out[FoundCategoryId].Nodes.push_back(NodeInstance);
 	}
 
 	return Out;

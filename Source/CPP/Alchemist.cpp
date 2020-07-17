@@ -1,6 +1,7 @@
 // Copyright Chris Sixsmith 2020.
 
 #include "Alchemist.h"
+#include "Module/Function.h"
 
 #include "Nodes/Special/Node_Root.h"
 
@@ -41,11 +42,12 @@ EM_BOOL UiEventCallback(int Type, const EmscriptenUiEvent* UiEvent, void* UserDa
 
 
 Alchemist::Alchemist()
+	: CurrentModule(this)
 {
 	// Initialize SDL
 	assert(SDL_Init(SDL_INIT_VIDEO) == 0);
 	assert(SDL_CreateWindowAndRenderer(_GetWindowStartSize().X, _GetWindowStartSize().Y, 0, &Window, &Renderer) == 0);
-	
+
 	SDL_SetWindowResizable(Window, SDL_TRUE);
 	SDL_SetRenderDrawBlendMode(Renderer, SDL_BLENDMODE_BLEND);
 
@@ -56,8 +58,9 @@ Alchemist::Alchemist()
 	WindowSurface = SDL_GetWindowSurface(Window);
 
 	// Create a node
-	CreateNode<Node_Root>(Point(0, 0));
-	CreateNode<Node_Root>(Point(1, 0));
+	CurrentFunction = CurrentModule.CreateOrGetFunction("main", 0);
+
+	CurrentFunction->CreateNode<Node_Root>(Point(0, 0));
 }
 
 Alchemist::~Alchemist()
@@ -85,80 +88,111 @@ void Alchemist::Run()
 
 void Alchemist::Frame()
 {
-	SDL_Event Event;
+	assert(CurrentFunction);
+
+	int Width;
+	int Height;
+
+	SDL_GetWindowSize(Window, &Width, &Height);
+
+	vector<Category> CategorisedNodes = Nodes.GetCategorisedNodes(); // todo: constantly calling this is terrible!
+	const Category& CurrentCategory = CategorisedNodes[PaletteCategory];
+
+
+	/////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
+
 
 	//Handle events on queue
-	while (SDL_PollEvent(&Event))
 	{
-		switch (Event.type)
+		SDL_Event Event;
+
+		while (SDL_PollEvent(&Event))
 		{
-			case SDL_QUIT:
+			switch (Event.type)
 			{
-				Close = true;
-				break;
-			}
-			case SDL_MOUSEBUTTONDOWN:
-			{
-				if (Event.button.button == 3)
+				case SDL_QUIT:
 				{
-					ViewDrag = true;
+					Close = true;
+					break;
 				}
-				else if(Event.button.button == 1)
+				case SDL_MOUSEBUTTONDOWN:
 				{
-					// Look for a node under the mouse.
-					// If there is one, begin dragging it.
-					Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
-					NodeOnMouse = GetNodeAt(MouseGridPosition);
-				}
-
-				break;
-			}
-			case SDL_MOUSEBUTTONUP:
-			{
-				if (Event.button.button == 3)
-				{
-					ViewDrag = false;
-				}
-				else if (Event.button.button == 1)
-				{
-					// If there is a node on the mouse, and the grid space below the mouse is clear, insert the node there.
-					if (NodeOnMouse)
+					if (Event.motion.x < Width - SidebarWidth)
 					{
-						Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
-						PlaceNode(NodeOnMouse, MouseGridPosition);
-
-						NodeOnMouse.reset();
+						if (Event.button.button == 3)
+						{
+							ViewDrag = true;
+						}
+						else if (Event.button.button == 1)
+						{
+							// Look for a node under the mouse.
+							// If there is one, begin dragging it.
+							Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
+							NodeOnMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+						}
 					}
+					else
+					{
+
+					}
+
+					break;
 				}
-
-				break;
-			}
-			case SDL_MOUSEMOTION:
-			{
-				MousePos.X = Event.motion.x;
-				MousePos.Y = Event.motion.y;
-
-				if (ViewDrag)
+				case SDL_MOUSEBUTTONUP:
 				{
-					ViewTopLeft.X -= Event.motion.xrel;
-					ViewTopLeft.Y -= Event.motion.yrel;
-				}
+					if (Event.motion.x < Width - SidebarWidth)
+					{
+						if (Event.button.button == 3)
+						{
+							ViewDrag = false;
+						}
+						else if (Event.button.button == 1)
+						{
+							// If there is a node on the mouse, and the grid space below the mouse is clear, insert the node there.
+							if (NodeOnMouse)
+							{
+								Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
+								CurrentFunction->PlaceNode(NodeOnMouse, MouseGridPosition);
 
-				break;
+								NodeOnMouse.reset();
+							}
+						}
+					}
+					else
+					{
+
+					}
+
+					break;
+				}
+				case SDL_MOUSEMOTION:
+				{
+					MousePos.X = Event.motion.x;
+					MousePos.Y = Event.motion.y;
+
+					if (ViewDrag)
+					{
+						ViewTopLeft.X -= Event.motion.xrel;
+						ViewTopLeft.Y -= Event.motion.yrel;
+					}
+
+					break;
+				}
 			}
 		}
 	}
+
+
+	/////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
+
 
 	// Draw background
 	SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 255);
 	SDL_RenderClear(Renderer);
 
 	// Draw grid
-	int Width;
-	int Height;
-
-	SDL_GetWindowSize(Window, &Width, &Height);
-
 	SDL_SetRenderDrawColor(Renderer, 220, 220, 220, 255);
 
 	int x = -ViewTopLeft.X % GridSize;
@@ -180,11 +214,15 @@ void Alchemist::Frame()
 	SDL_RenderDrawLine(Renderer, ViewTopLeft.X, -ViewTopLeft.Y, Width, -ViewTopLeft.Y);
 	SDL_RenderDrawLine(Renderer, -ViewTopLeft.X, ViewTopLeft.Y, -ViewTopLeft.X, Height);
 
+
+	/////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
+
+
 	// Draw nodes
-	for(int i = 0; i < (int)NodesOnGrid.size(); i++)
+	for(shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodesOnGrid())
 	{
-		Point Position = GridReverseLookup[i];
-		shared_ptr<Node> NodeOnGrid = NodesOnGrid[i];
+		Point Position = NodeOnGrid->GetGridPosition();
 
 		// Grid position to screen position
 		Point ScreenPosition = GridToScreen(Position);
@@ -201,59 +239,104 @@ void Alchemist::Frame()
 		// If the hovered grid space is empty, lock the node to it, otherwise move it exactly to the position of the mouse.
 		Point DrawPos = MousePos;
 
-		Point MouseGridPosition = ScreenToGrid(MousePos);
-		Point GridPos = GridToScreen(MouseGridPosition);
-		shared_ptr<Node> NodeUnderMouse = GetNodeAt(MouseGridPosition);
-
-		if (!NodeUnderMouse || NodeUnderMouse == NodeOnMouse)
+		if (MousePos.X < Width - SidebarWidth)
 		{
-			DrawPos = GridPos;
-			SDL_SetRenderDrawColor(Renderer, 100, 100, 255, 100);
+			Point MouseGridPosition = ScreenToGrid(MousePos);
+			Point GridPos = GridToScreen(MouseGridPosition);
+			shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+			if (!NodeUnderMouse || NodeUnderMouse == NodeOnMouse)
+			{
+				DrawPos = GridPos;
+				SDL_SetRenderDrawColor(Renderer, 100, 100, 255, 100);
+			}
+			else
+			{
+				SDL_SetRenderDrawColor(Renderer, 255, 100, 100, 100);
+			}
+
+			SDL_Rect Rect{ GridPos.X, GridPos.Y, GridSize, GridSize };
+
+			SDL_RenderFillRect(Renderer, &Rect);
 		}
 		else
 		{
-			SDL_SetRenderDrawColor(Renderer, 255, 100, 100, 100);
+			// TODO somehow show that releasing the node here will delete it?
 		}
-
-		SDL_Rect Rect{GridPos.X, GridPos.Y, GridSize, GridSize};
-
-		SDL_RenderFillRect(Renderer, &Rect);
 
 		NodeOnMouse->Draw(this, DrawPos, true);
 	}
+
+
+	/////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
+
+
+	// Render palette
+	SDL_Rect Rect{ Width - SidebarWidth, 0, SidebarWidth, Height };
+
+	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 100);
+	SDL_RenderFillRect(Renderer, &Rect);
+
+	Rect.w = 2;
+
+	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+	SDL_RenderFillRect(Renderer, &Rect);
+
+	// Render items in selected palette category
+	for (int i = 0; i < CurrentCategory.Nodes.size(); i++)
+	{
+		CurrentCategory.Nodes[i]->Draw(this, GetPaletteItemPos(i));
+	}
+
+
+	/////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
+
 
 	// Finish
 	SDL_RenderPresent(Renderer);
 }
 
-Point Alchemist::ScreenToGraph(const Point& ScreenPosition)
+Point Alchemist::ScreenToGraph(const Point& ScreenPosition) const
 {
 	return ScreenPosition + ViewTopLeft;
 }
 
-Point Alchemist::GraphToScreen(const Point& GraphPosition)
+Point Alchemist::GraphToScreen(const Point& GraphPosition) const
 {
 	return GraphPosition - ViewTopLeft;
 }
 
-Point Alchemist::GraphToGrid(const Point& GraphPosition)
+Point Alchemist::GraphToGrid(const Point& GraphPosition) const
 {
 	return GraphPosition / GridSize;
 }
 
-Point Alchemist::GridToGraph(const Point& GridPosition)
+Point Alchemist::GridToGraph(const Point& GridPosition) const
 {
 	return GridPosition * GridSize;
 }
 
-Point Alchemist::GridToScreen(const Point& GridPosition)
+Point Alchemist::GridToScreen(const Point& GridPosition) const
 {
 	return GraphToScreen(GridToGraph(GridPosition));
 }
 
-Point Alchemist::ScreenToGrid(const Point& ScreenPosition)
+Point Alchemist::ScreenToGrid(const Point& ScreenPosition) const
 {
 	return GraphToGrid(ScreenToGraph(ScreenPosition));
+}
+
+Point Alchemist::GetPaletteItemPos(int Index) const
+{
+	Point Out
+	{
+		 GetWindowSize().X + SidebarPadding - SidebarWidth + ((SidebarWidth / SidebarItemCount) * (Index % SidebarItemCount)),
+		 SidebarPadding + ((SidebarWidth / SidebarItemCount) * (Index / SidebarItemCount))
+	};
+	
+	return Out;
 }
 
 #if IS_WEB
@@ -264,76 +347,16 @@ EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
 }
 #endif
 
-bool Alchemist::PlaceNode(shared_ptr<Node> NewNode, const Point& Position)
+Size Alchemist::GetWindowSize() const
 {
-	if (GetNodeAt(Position))
-	{
-		// Space is occupied already
-		return false;
-	}
+	Size Out;
 
-	// Is this node on the grid already? (i.e. being moved)
-	int Found = -1;
-	
-	for(int i = 0; i < NodesOnGrid.size(); i++)
-	{
-		if(NodesOnGrid[i] == NewNode)
-		{
-			// We need to remove the lookup table entries.
-			Point PreviousPosition = GridReverseLookup[i];
+	SDL_GetWindowSize(Window, &Out.X, &Out.Y);
 
-			if(PreviousPosition == Position)
-			{
-				// Stop! Do nothing if the node is where we want it already.
-				return true;
-			}
-			
-			GridReverseLookup.erase(GridReverseLookup.find(i));
-			GridLookup.erase(GridLookup.find(PreviousPosition));
-
-			Found = i;
-			
-			break;
-		}
-	}
-
-	// Add if not found
-	if(Found == -1)
-	{
-		NodesOnGrid.push_back(NewNode);
-		Found = (int)NodesOnGrid.size() - 1;
-	}
-
-	// Add to lookups
-	GridLookup[Position] = Found;
-	GridReverseLookup[Found] = Position;
-
-	return true;
+	return Out;
 }
 
-shared_ptr<Node> Alchemist::GetNodeAt(const Point& Position) const
-{
-	auto Found = GridLookup.find(Position);
-
-	if(Found != GridLookup.end())
-	{
-		return GetNode(Found->second);
-	}
-
-	return nullptr;
-}
-
-shared_ptr<Node> Alchemist::GetNode(int ID) const
-{
-	return NodesOnGrid[ID];
-}
-
-void Alchemist::RemoveNode(int ID)
-{
-	// TODO
-}
-
-Size Alchemist::_GetWindowStartSize()
+Size Alchemist::_GetWindowStartSize() const
 {
 #if IS_WEB
 	return { GetWindowWidthJS(), GetWindowHeightJS() };

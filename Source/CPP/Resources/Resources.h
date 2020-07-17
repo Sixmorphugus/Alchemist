@@ -101,4 +101,4 @@ public:
 	ResourceRegistrar(ResourceFactoryBase* FactoryIn);
 };
 
-#define DECLARE_RESOURCE(ResourceClass, ResourceExtensionList) ResourceRegistrar ResourceClass ## Def(new ResourceFactory<ResourceClass>(ResourceExtensionList));
+#define DECLARE_RESOURCE(ResourceClass, ResourceExtensionList) ResourceRegistrar ResourceClass ## Def(new ResourceFactory<ResourceClass>(ResourceExtensionList))
