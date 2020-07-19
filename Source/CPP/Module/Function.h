@@ -47,6 +47,12 @@ public:
 	/** Deletes node with ID given. */
 	void RemoveNode(int ID);
 
+	/** Deletes node. */
+	void RemoveNode(const shared_ptr<Node>& NodeInstance);
+
+	/** Deletes node. */
+	int GetNodeId(const shared_ptr<Node>& NodeInstance) const;
+
 	/** Returns a copy of the list of all nodes. */
 	vector<shared_ptr<Node>> GetNodesOnGrid() const { return NodesOnGrid; }
 

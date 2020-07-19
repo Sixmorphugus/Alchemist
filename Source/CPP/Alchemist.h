@@ -54,7 +54,10 @@ public:
 	Point ScreenToGrid(const Point& ScreenPosition) const;
 
 	/** Returns screen position of palette item, taking into account current Palette Scroll. */
-	Point GetPaletteItemPos(int Index) const;
+	Point GetPaletteItemPosition(int Index) const;
+
+	/** Returns screen position of palette item, taking into account current Palette Scroll. */
+	Point GetCategoryButtonPosition(int Index) const;
 
 	/** Returns the renderer */
 	SDL_Renderer* GetRenderer() { return Renderer; }

@@ -28,13 +28,3 @@ size_t Node_Term_Int::GetDataSize() const
 }
 
 DECLARE_NODE(Node_Term_Int);
-NodeRegistrar Def1(make_shared<Node_Term_Int>());
-NodeRegistrar Def2(make_shared<Node_Term_Int>());
-NodeRegistrar Def3(make_shared<Node_Term_Int>());
-NodeRegistrar Def4(make_shared<Node_Term_Int>());
-NodeRegistrar Def5(make_shared<Node_Term_Int>());
-NodeRegistrar Def6(make_shared<Node_Term_Int>());
-NodeRegistrar Def7(make_shared<Node_Term_Int>());
-NodeRegistrar Def8(make_shared<Node_Term_Int>());
-NodeRegistrar Def9(make_shared<Node_Term_Int>());
-NodeRegistrar Def10(make_shared<Node_Term_Int>());

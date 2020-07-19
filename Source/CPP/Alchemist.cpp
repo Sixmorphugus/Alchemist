@@ -103,6 +103,23 @@ void Alchemist::Frame()
 	/////////////////////////////////////////////////////////////////
 
 
+	// Calculate the category item the mouse is currently over (null if none)
+	int PaletteSelection = -1;
+
+	for (int i = 0; i < CurrentCategory.Nodes.size(); i++)
+	{
+		Point NodePos = GetPaletteItemPosition(i);
+		if (MousePos.X > NodePos.X&& MousePos.Y > NodePos.Y&& MousePos.X <= NodePos.X + GridSize && MousePos.Y <= NodePos.Y + GridSize)
+		{
+			PaletteSelection = i;
+		}
+	}
+
+
+	/////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////
+
+
 	//Handle events on queue
 	{
 		SDL_Event Event;
@@ -134,7 +151,10 @@ void Alchemist::Frame()
 					}
 					else
 					{
-
+						if (PaletteSelection != -1)
+						{
+							NodeOnMouse = CurrentCategory.Nodes[PaletteSelection]->Clone();
+						}
 					}
 
 					break;
@@ -161,7 +181,11 @@ void Alchemist::Frame()
 					}
 					else
 					{
-
+						if (NodeOnMouse)
+						{
+							CurrentFunction->RemoveNode(NodeOnMouse);
+							NodeOnMouse.reset();
+						}
 					}
 
 					break;
@@ -273,21 +297,71 @@ void Alchemist::Frame()
 
 
 	// Render palette
-	SDL_Rect Rect{ Width - SidebarWidth, 0, SidebarWidth, Height };
+	SDL_Rect PaletteRect{ Width - SidebarWidth, 0, SidebarWidth, Height };
 
 	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 100);
-	SDL_RenderFillRect(Renderer, &Rect);
-
-	Rect.w = 2;
-
-	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
-	SDL_RenderFillRect(Renderer, &Rect);
+	SDL_RenderFillRect(Renderer, &PaletteRect);
 
 	// Render items in selected palette category
 	for (int i = 0; i < CurrentCategory.Nodes.size(); i++)
 	{
-		CurrentCategory.Nodes[i]->Draw(this, GetPaletteItemPos(i));
+		if (i == PaletteSelection)
+		{
+			Point SelectionPos = GetPaletteItemPosition(i);
+
+			SDL_Rect Rect{ SelectionPos.X - 2, SelectionPos.Y - 2, GridSize + 4, GridSize + 4 };
+
+			SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 100);
+			SDL_RenderFillRect(Renderer, &Rect);
+		}
+
+		CurrentCategory.Nodes[i]->Draw(this, GetPaletteItemPosition(i));
 	}
+
+	// Render palette tabs
+	for (int i = 0; i < CategorisedNodes.size(); i++)
+	{
+		Point CategoryButtonPos = GetCategoryButtonPosition(i);
+
+		SDL_Rect Rect{ CategoryButtonPos.X, CategoryButtonPos.Y, GridSize, GridSize };
+
+		SDL_SetRenderDrawColor(Renderer, 0, 0, 0, i == PaletteCategory ? 100 : 50);
+		SDL_RenderFillRect(Renderer, &Rect);
+
+		if (i == PaletteCategory)
+		{
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+
+			Rect.w = 2;
+			SDL_RenderFillRect(Renderer, &Rect);
+
+			Rect.w = GridSize + 2;
+			Rect.h = 2;
+
+			if (i != 0)
+			{
+				SDL_RenderFillRect(Renderer, &Rect);
+			}
+
+			Rect.y += GridSize - 2;
+			SDL_RenderFillRect(Renderer, &Rect);
+		}
+
+		CategorisedNodes[i].Nodes[0]->Draw(this, CategoryButtonPos);
+	}
+
+	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+
+	PaletteRect.w = 2;
+
+	// top half of palette border
+	PaletteRect.h = GetCategoryButtonPosition(PaletteCategory).Y - 1;
+	SDL_RenderFillRect(Renderer, &PaletteRect);
+
+	// bottom half of palette border
+	PaletteRect.y = GetCategoryButtonPosition(PaletteCategory).Y + GridSize;
+	PaletteRect.h = Height - GetCategoryButtonPosition(PaletteCategory).Y + GridSize;
+	SDL_RenderFillRect(Renderer, &PaletteRect);
 
 
 	/////////////////////////////////////////////////////////////////
@@ -328,7 +402,7 @@ Point Alchemist::ScreenToGrid(const Point& ScreenPosition) const
 	return GraphToGrid(ScreenToGraph(ScreenPosition));
 }
 
-Point Alchemist::GetPaletteItemPos(int Index) const
+Point Alchemist::GetPaletteItemPosition(int Index) const
 {
 	Point Out
 	{
@@ -336,6 +410,17 @@ Point Alchemist::GetPaletteItemPos(int Index) const
 		 SidebarPadding + ((SidebarWidth / SidebarItemCount) * (Index / SidebarItemCount))
 	};
 	
+	return Out;
+}
+
+Point Alchemist::GetCategoryButtonPosition(int Index) const
+{
+	Point Out
+	{
+		 GetWindowSize().X - SidebarWidth - GridSize,
+		 Index * GridSize
+	};
+
 	return Out;
 }
 

@@ -79,5 +79,35 @@ shared_ptr<Node> Function::GetNode(int ID) const
 
 void Function::RemoveNode(int ID)
 {
-	// TODO
+	if (GridReverseLookup.find(ID) != GridReverseLookup.end())
+	{
+		Point PreviousPosition = GridReverseLookup[ID];
+
+		GridReverseLookup.erase(GridReverseLookup.find(ID));
+		GridLookup.erase(GridLookup.find(PreviousPosition));
+		NodesOnGrid.erase(NodesOnGrid.begin() + ID);
+	}
+}
+
+void Function::RemoveNode(const shared_ptr<Node>& NodeInstance)
+{
+	int NodeId = GetNodeId(NodeInstance);
+
+	if (NodeId != -1)
+	{
+		RemoveNode(NodeId);
+	}
+}
+
+int Function::GetNodeId(const shared_ptr<Node>& NodeInstance) const
+{
+	for (int i = 0; i < NodesOnGrid.size(); i++)
+	{
+		if (NodesOnGrid[i] == NodeInstance)
+		{
+			return i;
+		}
+	}
+
+	return -1;
 }

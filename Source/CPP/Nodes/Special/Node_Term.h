@@ -14,7 +14,7 @@ public:
 	// Node interface.
 	virtual shared_ptr<Node> Clone() const override;
 	virtual string GetDisplayName() const override { return "Integer (" + to_string(Value) + ")"; }
-	virtual string GetCategory() const override { return "Basic"; }
+	virtual string GetCategory() const override { return "Basic 2"; }
 	virtual void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const override;
 	virtual void Load(const ifstream& FileStream) override;
 	virtual void Save(const ofstream& FileStream) const override;
