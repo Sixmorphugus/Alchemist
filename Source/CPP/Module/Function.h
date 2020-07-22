@@ -66,6 +66,10 @@ public:
 	Alchemist* GetInstance() const { return Instance; }
 
 private:
+	/** Recreates all values in the lookup table. */
+	void FixLookups();
+	
+private:
 	Alchemist* Instance;
 
 	vector<shared_ptr<Node>> NodesOnGrid;
