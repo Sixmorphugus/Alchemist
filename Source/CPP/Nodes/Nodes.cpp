@@ -14,13 +14,13 @@ Node::Node()
 
 bool Node::GetArgumentIsPattern(int Argument) const
 {
-	assert(Argument > 0 && Argument < ArgumentData.size());
+	assert(Argument >= 0 && Argument < ArgumentData.size());
 	return ArgumentData[Argument].IsPattern;
 }
 
 string Node::GetArgumentName(int Argument) const
 {
-	assert(Argument > 0 && Argument < ArgumentData.size());
+	assert(Argument >= 0 && Argument < ArgumentData.size());
 	return ArgumentData[Argument].ArgumentName;
 }
 
@@ -38,14 +38,14 @@ int Node::GetArgumentIndexFromName(const string& ArgumentName) const
 
 shared_ptr<Node> Node::GetConnector(int Argument) const
 {
-	assert(Argument > 0 && Argument < ArgumentData.size());
+	assert(Argument >= 0 && Argument < ArgumentData.size());
 	return ArgumentData[Argument].Connector;
 }
 
 bool Node::SetConnector(const shared_ptr<Node>& From, int Argument)
 {
 	// Still counts as an assertion failure if we provide an invalid index
-	assert(Argument > 0 && Argument < ArgumentData.size());
+	assert(Argument >= 0 && Argument < ArgumentData.size());
 
 	// TODO check type match
 	
@@ -56,7 +56,7 @@ bool Node::SetConnector(const shared_ptr<Node>& From, int Argument)
 
 void Node::DisconnectConnector(int Argument)
 {
-	assert(Argument > 0 && Argument < ArgumentData.size());
+	assert(Argument >= 0 && Argument < ArgumentData.size());
 	ArgumentData[Argument].Connector = nullptr;
 }
 

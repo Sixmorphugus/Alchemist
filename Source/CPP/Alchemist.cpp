@@ -1,9 +1,12 @@
 // Copyright Chris Sixsmith 2020.
 
 #include "Alchemist.h"
+
+#include "DrawShapes.h"
 #include "Module/Function.h"
 
 #include "Nodes/Special/Node_Root.h"
+#include "Resources/Resource_Font.h"
 
 int main(int argc, char* argv[])
 {
@@ -46,8 +49,10 @@ Alchemist::Alchemist()
 {
 	// Initialize SDL
 	assert(SDL_Init(SDL_INIT_VIDEO) == 0);
-	assert(SDL_CreateWindowAndRenderer(_GetWindowStartSize().X, _GetWindowStartSize().Y, 0, &Window, &Renderer) == 0);
+	assert(SDL_CreateWindowAndRenderer(GetWindowStartSize().X, GetWindowStartSize().Y, 0, &Window, &Renderer) == 0);
 
+	assert(TTF_Init() == 0);
+	
 	SDL_SetWindowResizable(Window, SDL_TRUE);
 	SDL_SetRenderDrawBlendMode(Renderer, SDL_BLENDMODE_BLEND);
 
@@ -59,8 +64,6 @@ Alchemist::Alchemist()
 
 	// Create a node
 	CurrentFunction = CurrentModule.CreateOrGetFunction("main", 0);
-
-	CurrentFunction->CreateNode<Node_Root>(Point(0, 0));
 }
 
 Alchemist::~Alchemist()
@@ -98,6 +101,8 @@ void Alchemist::Frame()
 	vector<Category> CategorisedNodes = Nodes.GetCategorisedNodes(); // todo: constantly calling this is terrible!
 	const Category& CurrentCategory = CategorisedNodes[PaletteCategory];
 
+	shared_ptr<Resource_Font> Font = Resources.GetResource<Resource_Font>("Font.ttf");
+	
 
 	/////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////
@@ -135,25 +140,81 @@ void Alchemist::Frame()
 				}
 				case SDL_MOUSEBUTTONDOWN:
 				{
-					if (Event.motion.x < Width - SidebarWidth)
+					if (Event.motion.x < Width - SidebarWidth - GridSize)
 					{
-						if (Event.button.button == 3)
+						Point EventMousePosition(Event.motion.x, Event.motion.y);
+						
+						Point MouseGridPosition = ScreenToGrid(EventMousePosition);
+						
+						if (Event.button.button == 2)
 						{
 							ViewDrag = true;
 						}
 						else if (Event.button.button == 1)
 						{
+							if (NodeBeingConnected)
+							{
+								if(NodeBeingConnectedTo)
+								{
+									// An options menu is open near this node.
+									// Find if we just clicked any option.
+									// The position of the menu options is fairly easy to work out.
+									Point OptionPosition = GetOptionsMenuPosition(NodeBeingConnectedTo);
+									Size OptionSize = GetOptionsMenuOptionSize(NodeBeingConnectedTo, Font);
+
+									for(int i = 0; i < NodeBeingConnectedTo->GetNumArguments(); i++)
+									{
+										SDL_Rect OptionRect = {
+											OptionPosition.X,
+											OptionPosition.Y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
+											OptionSize.X,
+											OptionSize.Y
+										};
+
+										if(EventMousePosition.IsInRectangle(OptionRect))
+										{
+											// Make a connection between arg i and the node, being connected, then break.
+											NodeBeingConnectedTo->SetConnector(NodeBeingConnected, i);
+											break;
+										}
+									}
+								}
+								
+								// Kill any pending connection.
+								NodeBeingConnected.reset();
+								NodeBeingConnectedTo.reset();
+							}
+							
 							// Look for a node under the mouse.
 							// If there is one, begin dragging it.
-							Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
 							NodeOnMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+						}
+						else if(Event.button.button == 3 && !NodeOnMouse)
+						{
+							// Look for a node under the mouse.
+							// If there is one, start creating a connector from this node.
+							NodeBeingConnected = CurrentFunction->GetNodeAt(MouseGridPosition);
 						}
 					}
 					else
 					{
+						// Pick up the palette selection.
 						if (PaletteSelection != -1)
 						{
 							NodeOnMouse = CurrentCategory.Nodes[PaletteSelection]->Clone();
+						}
+						else
+						{
+							// If there is no palette selection, look for the mouse being over a category button
+							if(Event.motion.x < Width - SidebarWidth && Event.motion.x > Width - SidebarWidth - GridSize)
+							{
+								int Category = Event.motion.y / GridSize;
+
+								if(Category < CategorisedNodes.size())
+								{
+									PaletteCategory = Category;
+								}
+							}
 						}
 					}
 
@@ -163,7 +224,7 @@ void Alchemist::Frame()
 				{
 					if (Event.motion.x < Width - SidebarWidth)
 					{
-						if (Event.button.button == 3)
+						if (Event.button.button == 2)
 						{
 							ViewDrag = false;
 						}
@@ -176,6 +237,22 @@ void Alchemist::Frame()
 								CurrentFunction->PlaceNode(NodeOnMouse, MouseGridPosition);
 
 								NodeOnMouse.reset();
+							}
+						}
+						else if (Event.button.button == 3)
+						{
+							// If there is a connector being dragged, connect it to the node it was dropped on. Always stop dragging at this point
+							if(NodeBeingConnected)
+							{
+								// If we dropped on another node, bring up the second stage connecting menu!
+								Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
+								NodeBeingConnectedTo = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+								if(!NodeBeingConnectedTo || NodeBeingConnectedTo == NodeBeingConnected)
+								{
+									NodeBeingConnected.reset();
+									NodeBeingConnectedTo.reset();
+								}
 							}
 						}
 					}
@@ -242,7 +319,7 @@ void Alchemist::Frame()
 	/////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////
 
-
+	
 	// Draw nodes
 	for(shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodesOnGrid())
 	{
@@ -253,6 +330,19 @@ void Alchemist::Frame()
 
 		// Draw
 		NodeOnGrid->Draw(this, ScreenPosition, NodeOnGrid == NodeOnMouse);
+	}
+
+	// Draw node connections
+	for (shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodesOnGrid())
+	{
+		for(int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
+		{
+			if(shared_ptr<Node> Connector = NodeOnGrid->GetConnector(i))
+			{
+				SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+				DrawConnectorArrowOnGrid(Connector->GetGridPosition(), NodeOnGrid->GetGridPosition());
+			}
+		}
 	}
 
 	// Draw node being dragged
@@ -289,6 +379,104 @@ void Alchemist::Frame()
 		}
 
 		NodeOnMouse->Draw(this, DrawPos, true);
+	}
+	else
+	{
+		// Draw node captions of any node under the mouse
+		Point MouseGridPosition = ScreenToGrid(MousePos);
+		shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+		if(NodeUnderMouse)
+		{
+			string NodeDetailText = NodeUnderMouse->GetDisplayName();
+
+			SDL_Texture* DisplayTexture = Font->GetStringTexture(NodeDetailText);
+			Size DisplaySize = Font->GetStringScreenSize(NodeDetailText);
+
+			SDL_Rect DisplayRect;
+			
+			DisplayRect.x = MousePos.X + 20;
+			DisplayRect.y = MousePos.Y + 20;
+			DisplayRect.w = DisplaySize.X;
+			DisplayRect.h = DisplaySize.Y;
+
+			SDL_SetTextureColorMod(DisplayTexture, 0, 0, 0);
+			SDL_RenderCopy(Renderer, DisplayTexture, NULL, &DisplayRect);
+		}
+	}
+
+	// Draw connector being dragged
+	if(NodeBeingConnected)
+	{
+		if(!NodeBeingConnectedTo) // de-facto "dragging" state
+		{
+			Point MouseGridPosition = ScreenToGrid(MousePos);
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 200);
+			DrawConnectorArrowOnGrid(NodeBeingConnected->GetGridPosition(), MouseGridPosition);
+		}
+		else // de-facto "connecting" state
+		{
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 255, 255);
+			DrawConnectorArrowOnGrid(NodeBeingConnected->GetGridPosition(), NodeBeingConnectedTo->GetGridPosition());
+
+			Point OptionPosition = GetOptionsMenuPosition(NodeBeingConnected);
+			Size OptionSize = GetOptionsMenuOptionSize(NodeBeingConnectedTo, Font);
+
+			SDL_Rect OptionsRect = {
+				OptionPosition.X,
+				OptionPosition.Y,
+				OptionSize.X,
+				OptionSize.Y
+			};
+			
+			// Turn per-option size into full menu size.
+			OptionsRect.h *= NodeBeingConnectedTo->GetNumArguments();
+
+			// Add padding
+			OptionsRect.w += ConnectMenuOptionPadding;
+			OptionsRect.h += ConnectMenuOptionPadding;
+			
+			// Draw pop-out variable list
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 200);
+			SDL_RenderFillRect(Renderer, &OptionsRect);
+
+			// Draw outline (x2)
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+			DrawThickRectangle(this, OptionsRect, 2);
+
+			for (int i = 0; i < NodeBeingConnectedTo->GetNumArguments(); i++)
+			{
+				// For rendering string
+				string Argument = NodeBeingConnectedTo->GetArgumentName(i);
+
+				Size StringSize = Font->GetStringScreenSize(Argument);
+
+				SDL_Rect Rect = {
+					OptionsRect.x + (ConnectMenuOptionPadding / 2),
+					OptionsRect.y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
+					StringSize.X,
+					StringSize.Y
+				};
+
+				// For rendering highlight
+				SDL_Rect HighlightRect = {
+					OptionsRect.x,
+					OptionsRect.y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
+					OptionsRect.w,
+					OptionSize.Y
+				};
+
+				// Render highlight first, IF the mouse is within its area.
+				if(MousePos.IsInRectangle(HighlightRect))
+				{
+					SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 100);
+					SDL_RenderFillRect(Renderer, &HighlightRect);
+				}
+
+				// Then string
+				SDL_RenderCopy(Renderer, Font->GetStringTexture(Argument), NULL, &Rect);
+			}
+		}
 	}
 
 
@@ -441,11 +629,56 @@ Size Alchemist::GetWindowSize() const
 	return Out;
 }
 
-Size Alchemist::_GetWindowStartSize() const
+Size Alchemist::GetOptionsMenuPosition(const shared_ptr<Node>& NodeOnGrid) const
+{
+	return Size{ GridToScreen(NodeBeingConnectedTo->GetGridPosition() + Point(1, 1)).X + 2, GridToScreen(NodeBeingConnectedTo->GetGridPosition() + Point(1, 1)).Y + 2 };
+}
+
+Size Alchemist::GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid, const shared_ptr<Resource_Font>& FontResource) const
+{
+	Size SizeOut;
+
+	for (int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
+	{
+		string Argument = NodeOnGrid->GetArgumentName(i);
+
+		Size StringSize = FontResource->GetStringScreenSize(Argument);
+
+		if (StringSize.X > SizeOut.X)
+		{
+			SizeOut.X = StringSize.X;
+		}
+
+		if (StringSize.Y > SizeOut.Y)
+		{
+			SizeOut.Y = StringSize.Y;
+		}
+	}
+
+	return SizeOut;
+}
+
+Size Alchemist::GetWindowStartSize() const
 {
 #if IS_WEB
 	return { GetWindowWidthJS(), GetWindowHeightJS() };
 #else
 	return { 1600, 900 };
 #endif
+}
+
+void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2)
+{
+	Point ScreenPoint1 = GridToScreen(Point1) + (GridSize / 2);
+	Point ScreenPoint2 = GridToScreen(Point2) + (GridSize / 2);
+
+	// We need to translate the ends of the arrow out of their circles.
+	// First find the unit vector of the line.
+	double Radius = 40.f;
+	Point PushVector = (Point2 - Point1).NormaliseToLength(Radius);
+
+	ScreenPoint1 += PushVector;
+	ScreenPoint2 -= PushVector;
+	
+	DrawConnectorArrow(this, ScreenPoint1, ScreenPoint2);
 }

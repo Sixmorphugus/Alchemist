@@ -1,41 +1,39 @@
 // Copyright Chris Sixsmith 2020.
 
 #include "DrawShapes.h"
+#include "Alchemist.h"
 
-void DrawCircle(SDL_Renderer* Renderer, const Point& Position, int Radius)
+void DrawConnectorArrow(Alchemist* Instance, Point Start, Point End)
 {
-    const int32_t Diameter = (Radius * 2);
+	// Draw our first line, the actual body of the arrow.
+	SDL_RenderDrawLine(Instance->GetRenderer(), Start.X, Start.Y, End.X, End.Y);
 
-    int32_t x = (Radius - 1);
-    int32_t y = 0;
-    int32_t tx = 1;
-    int32_t ty = 1;
-    int32_t error = (tx - Diameter);
+	double Sigma = atan2(End.Y - Start.Y, End.X - Start.X);
 
-    while (x >= y)
-    {
-        // Each of the following renders an octant of the circle
-        SDL_RenderDrawPoint(Renderer, Position.X + x, Position.Y - y);
-        SDL_RenderDrawPoint(Renderer, Position.X + x, Position.Y + y);
-        SDL_RenderDrawPoint(Renderer, Position.X - x, Position.Y - y);
-        SDL_RenderDrawPoint(Renderer, Position.X - x, Position.Y + y);
-        SDL_RenderDrawPoint(Renderer, Position.X + y, Position.Y - x);
-        SDL_RenderDrawPoint(Renderer, Position.X + y, Position.Y + x);
-        SDL_RenderDrawPoint(Renderer, Position.X - y, Position.Y - x);
-        SDL_RenderDrawPoint(Renderer, Position.X - y, Position.Y + x);
+	double S1 = Sigma + (135 * (3.14 / 180));
+	double S2 = Sigma - (135 * (3.14 / 180));
 
-        if (error <= 0)
-        {
-            ++y;
-            error += ty;
-            ty += 2;
-        }
+	double r = 20;
+	
+	Point P1((int)(r * cos(S1)), (int)(r * sin(S1)));
+	Point P2((int)(r * cos(S2)), (int)(r * sin(S2)));
 
-        if (error > 0)
-        {
-            --x;
-            tx += 2;
-            error += (tx - Diameter);
-        }
-    }
+	P1 += End;
+	P2 += End;
+	
+	SDL_RenderDrawLine(Instance->GetRenderer(), P1.X, P1.Y, End.X, End.Y);
+	SDL_RenderDrawLine(Instance->GetRenderer(), P2.X, P2.Y, End.X, End.Y);
+}
+
+void DrawThickRectangle(Alchemist* Instance, SDL_Rect Rect, int Thickness)
+{
+	for(int i = 0; i < Thickness; i++)
+	{
+		SDL_RenderDrawRect(Instance->GetRenderer(), &Rect);
+
+		Rect.x += 1;
+		Rect.y += 1;
+		Rect.w -= 2;
+		Rect.h -= 2;
+	}
 }

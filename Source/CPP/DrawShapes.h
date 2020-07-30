@@ -5,5 +5,6 @@
 #include "Libs.h"
 #include "2DPositioning.h"
 
-// Taken from StackOverflow: https://stackoverflow.com/questions/38334081/howto-draw-circles-arcs-and-vector-graphics-in-sdl#38335842
-void DrawCircle(SDL_Renderer* Renderer, const Point& Position, int Radius);
+void DrawConnectorArrow(class Alchemist* Instance, Point Start, Point End);
+
+void DrawThickRectangle(class Alchemist* Instance, SDL_Rect Rect, int Thickness);

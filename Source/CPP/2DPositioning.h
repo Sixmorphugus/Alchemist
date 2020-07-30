@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Libs.h"
+
 // Save me from boilerplate
 #define IMPLEMENT_POINT_ARITHMETIC(Op) \
 Point operator ## Op(const Point& RHS) const \
@@ -53,6 +55,23 @@ struct Point
 	bool operator!=(const Point& Other) const
 	{
 		return X != Other.X || Y != Other.Y;
+	}
+
+	Point NormaliseToLength(double Length) const
+	{
+		Point Out;
+
+		double Divisor = sqrt((double)((X * X) + (Y * Y)));
+		
+		Out.X = (int)(((double)X / Divisor) * Length);
+		Out.Y = (int)(((double)Y / Divisor) * Length);
+
+		return Out;
+	}
+
+	bool IsInRectangle(const SDL_Rect& Rect) const
+	{
+		return X >= Rect.x && Y >= Rect.y && X < Rect.x + Rect.w && Y < Rect.y + Rect.h;
 	}
 	
 	IMPLEMENT_POINT_ARITHMETIC(+);

@@ -7,11 +7,13 @@
 #include "Nodes/Nodes.h"
 #include "Resources/Resources.h"
 #include "Module/Module.h"
+#include "Resources/Resource_Font.h"
 
 const int GridSize = 64;
 const int SidebarWidth = 400;
 const int SidebarItemCount = 4;
 const int SidebarPadding = (SidebarWidth - (SidebarItemCount * GridSize)) / 8;
+const int ConnectMenuOptionPadding = 16;
 
 class Function;
 
@@ -77,9 +79,18 @@ public:
 	/** Returns window size. */
 	Size GetWindowSize() const;
 
+	/** Returns size of options in the options menu rect spawned from given node. */
+	Size GetOptionsMenuPosition(const shared_ptr<Node>& NodeOnGrid) const;
+	
+	/** Returns size of options in the options menu rect spawned from given node. */
+	Size GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid, const shared_ptr<Resource_Font>& FontResource) const;
+
 private:	
 	/** Gets window start size. */
-	Size _GetWindowStartSize() const;
+	Size GetWindowStartSize() const;
+
+	/** Draws connector relative to grid. */
+	void DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2);
 	
 private:
 	bool Close = false;
@@ -99,6 +110,9 @@ private:
 	ResourceManager Resources;
 
 	shared_ptr<Node> NodeOnMouse;
+
+	shared_ptr<Node> NodeBeingConnected;
+	shared_ptr<Node> NodeBeingConnectedTo;
 
 	Module CurrentModule;
 	shared_ptr<Function> CurrentFunction;
