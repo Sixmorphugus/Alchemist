@@ -5,6 +5,7 @@
 #include "Libs.h"
 #include "Variables.h"
 #include "2DPositioning.h"
+#include "CompilationProblem.h"
 
 class Alchemist;
 
@@ -20,7 +21,7 @@ class Alchemist;
  * - Argument names and types
  * - Emit function for creating a line of Erlang code.
  */
-class Node
+class Node : public enable_shared_from_this<Node>
 {
 public:
 	Node();
@@ -33,9 +34,9 @@ public:
 	friend class Function;
 
 
-	// Metadata.
-	/////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////
+// Metadata.
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
 
 public:
@@ -46,9 +47,9 @@ public:
 	virtual string GetCategory() const { return ""; }
 
 
-	// Serialisation. Note that most nodes have no special data.
-	/////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////
+// Serialisation. Note that most nodes have no special data.
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
 
 public:
@@ -62,9 +63,9 @@ public:
 	virtual size_t GetDataSize() const { return 0; }
 
 
-	// Variable Data.
-	/////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////
+// Variable Data.
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
 
 public:
@@ -105,12 +106,15 @@ private:
 	unordered_map<string, int> ArgumentLookupTable;
 
 
-	// Misc.
-	/////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////
+// Misc.
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
 
 public:
+	/** Emits this node's Erlang code. Arguably the most important function. */
+	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) = 0;
+	
 	/** Draws the node somewhere on-screen. */
 	virtual void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const;
 
@@ -118,13 +122,13 @@ public:
 	virtual SDL_Rect GetRenderRect(const Point& Position) const;
 
 	/** Returns the node's ID to the NodeManager that manages it. */
-	int GetID() { return ID; }
+	int GetID() const { return ID; }
 
 	/** Returns the function the node is inside. */
-	Function* GetFunction() { return NodeFunction; }
+	Function* GetFunction() const { return NodeFunction; }
 
 	/** Return's the node's cached grid position. */
-	Point GetGridPosition() { return GridPosition; }
+	Point GetGridPosition() const { return GridPosition; }
 
 protected:
 	/** Triggers when an instance of the node is placed in a function. */
@@ -137,6 +141,12 @@ private:
 	
 	// TODO Erlang code emit
 };
+
+/** Sorting operator. */
+inline bool operator < (const shared_ptr<Node>& LHS, const shared_ptr<Node>& RHS)
+{
+	return (LHS->GetGridPosition().X > RHS->GetGridPosition().X);
+}
 
 
 /** NodeManager category. */
@@ -222,3 +232,4 @@ public:
 };
 
 #define DECLARE_NODE(NodeClass, ...) NodeRegistrar NodeClass ## Def (make_shared<NodeClass>(__VA_ARGS__))
+#define DECLARE_NODE_CUSTOMNAME(Name, NodeClass, ...) NodeRegistrar Name (make_shared<NodeClass>(__VA_ARGS__))

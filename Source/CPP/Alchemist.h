@@ -29,6 +29,8 @@ public:
 	/** Run() will run the environment until the user closes it. */
 	void Run();
 
+	
+	
 	/** Core loop inner function. Processes a single Frame when called. */
 	void Frame();
 	
@@ -91,6 +93,9 @@ private:
 
 	/** Draws connector relative to grid. */
 	void DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2);
+
+	/** Draws tooltip. */
+	void DrawTooltip(const shared_ptr<Node>& node);
 	
 private:
 	bool Close = false;
@@ -116,4 +121,6 @@ private:
 
 	Module CurrentModule;
 	shared_ptr<Function> CurrentFunction;
+
+	vector<CompilationProblem> ProblemsFromLastCompile;
 };

@@ -191,6 +191,8 @@ void Alchemist::Frame()
 						}
 						else if(Event.button.button == 3 && !NodeOnMouse)
 						{
+							NodeBeingConnectedTo.reset();
+							
 							// Look for a node under the mouse.
 							// If there is one, start creating a connector from this node.
 							NodeBeingConnected = CurrentFunction->GetNodeAt(MouseGridPosition);
@@ -248,7 +250,7 @@ void Alchemist::Frame()
 								Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
 								NodeBeingConnectedTo = CurrentFunction->GetNodeAt(MouseGridPosition);
 
-								if(!NodeBeingConnectedTo || NodeBeingConnectedTo == NodeBeingConnected)
+								if(!NodeBeingConnectedTo || NodeBeingConnectedTo == NodeBeingConnected || NodeBeingConnectedTo->GetNumArguments() == 0)
 								{
 									NodeBeingConnected.reset();
 									NodeBeingConnectedTo.reset();
@@ -278,6 +280,41 @@ void Alchemist::Frame()
 						ViewTopLeft.Y -= Event.motion.yrel;
 					}
 
+					break;
+				}
+				case SDL_KEYDOWN:
+				{
+					if(Event.key.keysym.sym == SDLK_F5)
+					{
+						string OutCode;
+						vector<CompilationProblem> OutProblems;
+						
+						if(CurrentFunction->Emit(OutCode, OutProblems))
+						{
+							// Print the code
+							cout << OutCode << endl;
+						}
+						else
+						{
+							cout << "Compile failed!" << endl;
+						}
+
+						// Always print the problems
+						if(OutProblems.size() > 0)
+						{
+							cout << endl << "Detected Problems:" << endl;
+
+							for(int i = 0; i < OutProblems.size(); i++)
+							{
+								cout << "- " << OutProblems[i].Problem << endl;
+							}
+						}
+
+						// Leave the problems cached - we will display them until the code is recompiled, or a different function is opened.
+						// TODO do this per function?
+						ProblemsFromLastCompile = OutProblems;
+					}
+					
 					break;
 				}
 			}
@@ -321,7 +358,7 @@ void Alchemist::Frame()
 
 	
 	// Draw nodes
-	for(shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodesOnGrid())
+	for(shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodes())
 	{
 		Point Position = NodeOnGrid->GetGridPosition();
 
@@ -333,7 +370,7 @@ void Alchemist::Frame()
 	}
 
 	// Draw node connections
-	for (shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodesOnGrid())
+	for (shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodes())
 	{
 		for(int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
 		{
@@ -388,20 +425,7 @@ void Alchemist::Frame()
 
 		if(NodeUnderMouse)
 		{
-			string NodeDetailText = NodeUnderMouse->GetDisplayName();
-
-			SDL_Texture* DisplayTexture = Font->GetStringTexture(NodeDetailText);
-			Size DisplaySize = Font->GetStringScreenSize(NodeDetailText);
-
-			SDL_Rect DisplayRect;
-			
-			DisplayRect.x = MousePos.X + 20;
-			DisplayRect.y = MousePos.Y + 20;
-			DisplayRect.w = DisplaySize.X;
-			DisplayRect.h = DisplaySize.Y;
-
-			SDL_SetTextureColorMod(DisplayTexture, 0, 0, 0);
-			SDL_RenderCopy(Renderer, DisplayTexture, NULL, &DisplayRect);
+			DrawTooltip(NodeUnderMouse);
 		}
 	}
 
@@ -411,7 +435,22 @@ void Alchemist::Frame()
 		if(!NodeBeingConnectedTo) // de-facto "dragging" state
 		{
 			Point MouseGridPosition = ScreenToGrid(MousePos);
-			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 200);
+			shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+			
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 150);
+
+			if(NodeUnderMouse)
+			{
+				if(NodeUnderMouse->GetNumArguments())
+				{
+					SDL_SetRenderDrawColor(Renderer, 0, 0, 255, 150);
+				}
+				else
+				{
+					SDL_SetRenderDrawColor(Renderer, 255, 0, 0, 150);
+				}
+			}
+			
 			DrawConnectorArrowOnGrid(NodeBeingConnected->GetGridPosition(), MouseGridPosition);
 		}
 		else // de-facto "connecting" state
@@ -501,6 +540,9 @@ void Alchemist::Frame()
 
 			SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 100);
 			SDL_RenderFillRect(Renderer, &Rect);
+
+			// Draw node name
+			DrawTooltip(CurrentCategory.Nodes[i]);
 		}
 
 		CurrentCategory.Nodes[i]->Draw(this, GetPaletteItemPosition(i));
@@ -681,4 +723,29 @@ void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point
 	ScreenPoint2 -= PushVector;
 	
 	DrawConnectorArrow(this, ScreenPoint1, ScreenPoint2);
+}
+
+void Alchemist::DrawTooltip(const shared_ptr<Node>& Node)
+{
+	shared_ptr<Resource_Font> Font = Resources.GetResource<Resource_Font>("Font.ttf");
+	
+	string NodeDetailText = Node->GetDisplayName();
+
+	SDL_Texture* DisplayTexture = Font->GetStringTexture(NodeDetailText);
+	Size DisplaySize = Font->GetStringScreenSize(NodeDetailText);
+
+	SDL_Rect DisplayRect;
+
+	DisplayRect.x = MousePos.X + 20;
+	DisplayRect.y = MousePos.Y + 20;
+	DisplayRect.w = DisplaySize.X;
+	DisplayRect.h = DisplaySize.Y;
+
+	if(DisplayRect.x + DisplayRect.w > GetWindowSize().X)
+	{
+		DisplayRect.x -= DisplayRect.w;
+	}
+
+	SDL_SetTextureColorMod(DisplayTexture, 0, 0, 0);
+	SDL_RenderCopy(Renderer, DisplayTexture, NULL, &DisplayRect);
 }

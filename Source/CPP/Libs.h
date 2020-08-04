@@ -23,5 +23,6 @@
 #include <cassert>
 #include <memory>
 #include <filesystem>
+#include <algorithm>
 
 using namespace std;

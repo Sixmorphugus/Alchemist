@@ -1,5 +1,7 @@
 #include "Function.h"
 
+#include "Nodes/Special/Node_Root.h"
+
 Function::Function(Alchemist* InstanceIn, string NameIn, int ArityIn)
 	: Instance(InstanceIn), Name(NameIn), Arity(ArityIn)
 {}
@@ -107,6 +109,39 @@ int Function::GetNodeId(const shared_ptr<Node>& NodeInstance) const
 	}
 
 	return -1;
+}
+
+bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
+{
+	// First we need to find our list of root nodes.
+	// These nodes determine the different function patterns.
+	// The ordering is left->right
+	vector<shared_ptr<Node_Root>> RootNodes = GetNodesOfClass<Node_Root>();
+
+	// Sort nodes by their x coordinate (lower->higher)
+	sort(RootNodes.begin(), RootNodes.end());
+	
+	// Once that is done, we build a script by, for each root node:
+	// - Outputting a function header including the root node's argument pattern and, if one was defined, its guard sequence. 
+	// - Going backwards up the tree from the RetVal and generating output expressions, assigning them to variables.
+	// The generated code will end with the final expression in the tree (the one connected to RetVal) as the return value.
+
+	bool Pass = true;
+	
+	for(int i = 0; i < RootNodes.size(); i++)
+	{
+		if(!RootNodes[i]->Emit(Output, Problems))
+		{
+			Pass = false;
+			Problems.push_back(CompilationProblem{ RootNodes[i], "Couldn't compile overload " + to_string(i) + "! (see above)" });
+		}
+
+		// If last root node, end with semicolon (;) - otherwise, with full stop (.)
+		Output += i + 1 < RootNodes.size() ? ";" : ".";
+	}
+	
+	// Success?
+	return Pass;
 }
 
 void Function::FixLookups()

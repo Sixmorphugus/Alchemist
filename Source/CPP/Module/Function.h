@@ -4,6 +4,7 @@
 
 #include "Libs.h"
 #include "Alchemist.h"
+#include "CompilationProblem.h"
 
 /**
  * A function within the user's program.
@@ -43,7 +44,7 @@ public:
 
 	/** Returns node with ID given. */
 	shared_ptr<Node> GetNode(int ID) const;
-
+	
 	/** Deletes node with ID given. */
 	void RemoveNode(int ID);
 
@@ -54,8 +55,27 @@ public:
 	int GetNodeId(const shared_ptr<Node>& NodeInstance) const;
 
 	/** Returns a copy of the list of all nodes. */
-	vector<shared_ptr<Node>> GetNodesOnGrid() const { return NodesOnGrid; }
+	vector<shared_ptr<Node>> GetNodes() const { return NodesOnGrid; }
 
+	/** Returns all nodes of the given type. */
+	template<class NodeClass>
+	vector<shared_ptr<NodeClass>> GetNodesOfClass() const
+	{
+		vector<shared_ptr<NodeClass>> Out;
+
+		for(int i = 0; i < NodesOnGrid.size(); i++)
+		{
+			shared_ptr<NodeClass> NodeAsClass = dynamic_pointer_cast<NodeClass>(NodesOnGrid[i]);
+
+			if(NodeAsClass)
+			{
+				Out.push_back(NodeAsClass);
+			}
+		}
+
+		return Out;
+	}
+	
 	/** Returns function's arity (argument count). */
 	int GetArity() const { return Arity; }
 
@@ -65,6 +85,9 @@ public:
 	/** Returns alchemist application instance. */
 	Alchemist* GetInstance() const { return Instance; }
 
+	/** Emits Erlang code for the function. */
+	bool Emit(string& Output, vector<CompilationProblem>& Problems) const;
+	
 private:
 	/** Recreates all values in the lookup table. */
 	void FixLookups();
@@ -75,7 +98,7 @@ private:
 	vector<shared_ptr<Node>> NodesOnGrid;
 	unordered_map<Point, int> GridLookup; // for looking up nodes from grid positions
 	unordered_map<int, Point> GridReverseLookup; // for looking up grid positions from nodes
-
+	
 	string Name;
 	int Arity = 0;
 	Module* ParentModule;
