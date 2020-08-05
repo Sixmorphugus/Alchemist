@@ -36,11 +36,34 @@ void Node_Variable::Draw(Alchemist* Instance, const Point& Position, bool IsPrev
 
 bool Node_Variable::Emit(string& Output, vector<CompilationProblem>& Problems)
 {
-	// TODO catch first letter not being uppercase
+	if(Name.size() == 0)
+	{
+		Problems.push_back(CompilationProblem{ shared_from_this(), "No variable name was provided." });
+		return false;
+	}
+
+	if(!isupper(Name[0]))
+	{
+		Problems.push_back(CompilationProblem{ shared_from_this(), "Variable names must start with a capital letter to be valid Erlang." });
+		return false;
+	}
 	
 	Output += Name;
 
 	return true;
+}
+
+void Node_Variable::HandleTextInput(const SDL_Event& Event)
+{
+	Name += Event.text.text;
+}
+
+void Node_Variable::HandleKeyPress(const SDL_Event& Event)
+{
+	if(Event.key.keysym.sym == SDLK_BACKSPACE)
+	{
+		Name = Name.substr(0, Name.size() - 1);
+	}
 }
 
 DECLARE_NODE(Node_Variable);

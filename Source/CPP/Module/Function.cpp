@@ -119,7 +119,14 @@ bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
 	vector<shared_ptr<Node_Root>> RootNodes = GetNodesOfClass<Node_Root>();
 
 	// Sort nodes by their x coordinate (lower->higher)
-	sort(RootNodes.begin(), RootNodes.end());
+	struct {
+		bool operator()(const shared_ptr<Node>& LHS, const shared_ptr<Node>& RHS) const
+		{
+			return (LHS->GetGridPosition().X < RHS->GetGridPosition().X);
+		}
+	} SortNodes;
+	
+	sort(RootNodes.begin(), RootNodes.end(), SortNodes);
 	
 	// Once that is done, we build a script by, for each root node:
 	// - Outputting a function header including the root node's argument pattern and, if one was defined, its guard sequence. 
@@ -138,6 +145,7 @@ bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
 
 		// If last root node, end with semicolon (;) - otherwise, with full stop (.)
 		Output += i + 1 < RootNodes.size() ? ";" : ".";
+		Output += "\n";
 	}
 	
 	// Success?

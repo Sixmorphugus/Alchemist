@@ -83,7 +83,12 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 	if(shared_ptr<Node> Guard = GetConnector(1))
 	{
 		Output += "when ";
-		Guard->Emit(Output, Problems);
+		
+		if(!Guard->Emit(Output, Problems))
+		{
+			Success = false;
+		}
+
 		Output += " ";
 	}
 
@@ -92,7 +97,10 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 	// Output the nested expression.
 	if (shared_ptr<Node> Expression = GetConnector(0))
 	{
-		Expression->Emit(Output, Problems);
+		if(!Expression->Emit(Output, Problems))
+		{
+			Success = false;
+		}
 	}
 
 	return Success;

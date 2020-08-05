@@ -118,6 +118,12 @@ public:
 	/** Draws the node somewhere on-screen. */
 	virtual void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const;
 
+	/** Handles unhandled key presses. */
+	virtual void HandleKeyPress(const SDL_Event& Event) {}
+	
+	/** Handles text input. */
+	virtual void HandleTextInput(const SDL_Event& Event) {}
+	
 	/** Gets the screen rectangle where this node is drawn given a draw position. */
 	virtual SDL_Rect GetRenderRect(const Point& Position) const;
 
@@ -141,12 +147,6 @@ private:
 	
 	// TODO Erlang code emit
 };
-
-/** Sorting operator. */
-inline bool operator < (const shared_ptr<Node>& LHS, const shared_ptr<Node>& RHS)
-{
-	return (LHS->GetGridPosition().X > RHS->GetGridPosition().X);
-}
 
 
 /** NodeManager category. */

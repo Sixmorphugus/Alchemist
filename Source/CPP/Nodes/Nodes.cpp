@@ -39,7 +39,7 @@ int Node::GetArgumentIndexFromName(const string& ArgumentName) const
 shared_ptr<Node> Node::GetConnector(int Argument) const
 {
 	assert(Argument >= 0 && Argument < ArgumentData.size());
-	return ArgumentData[Argument].Connector;
+	return ArgumentData[Argument].Connector.lock();
 }
 
 bool Node::SetConnector(const shared_ptr<Node>& From, int Argument)
@@ -57,13 +57,13 @@ bool Node::SetConnector(const shared_ptr<Node>& From, int Argument)
 void Node::DisconnectConnector(int Argument)
 {
 	assert(Argument >= 0 && Argument < ArgumentData.size());
-	ArgumentData[Argument].Connector = nullptr;
+	ArgumentData[Argument].Connector.reset();
 }
 
 void Node::RegisterArgument(const string& ArgumentName, bool IsPattern)
 {
 	assert(GetArgumentIndexFromName(ArgumentName) == -1);
-	ArgumentData.push_back(NodeArgumentData{ ArgumentName, IsPattern, nullptr });
+	ArgumentData.push_back(NodeArgumentData{ ArgumentName, IsPattern, weak_ptr<Node>() });
 }
 
 void Node::Draw(Alchemist* Instance, const Point& Position, bool IsPreview) const

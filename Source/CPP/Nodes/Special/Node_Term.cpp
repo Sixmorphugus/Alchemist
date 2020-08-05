@@ -63,4 +63,23 @@ bool Node_Term_Int::Emit(string& Output, vector<CompilationProblem>& Problems)
 	return true;
 }
 
+void Node_Term_Int::HandleTextInput(const SDL_Event& Event)
+{
+	string ValueStr = to_string(Value);
+	ValueStr += Event.text.text;
+
+	Value = atoi(ValueStr.c_str());
+}
+
+void Node_Term_Int::HandleKeyPress(const SDL_Event& Event)
+{
+	if (Event.key.keysym.sym == SDLK_BACKSPACE)
+	{
+		string ValueStr = to_string(Value);
+		ValueStr = ValueStr.substr(0, ValueStr.size() - 1);
+
+		Value = atoi(ValueStr.c_str());
+	}
+}
+
 DECLARE_NODE(Node_Term_Int);

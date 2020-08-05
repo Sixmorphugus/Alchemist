@@ -100,6 +100,7 @@ private:
 private:
 	bool Close = false;
 	bool ViewDrag = false;
+	bool Copy = false;
 
 	int PaletteScroll = 0;
 	int PaletteCategory = 0;
@@ -118,6 +119,8 @@ private:
 
 	shared_ptr<Node> NodeBeingConnected;
 	shared_ptr<Node> NodeBeingConnectedTo;
+
+	weak_ptr<Node> NodeLastSelected;
 
 	Module CurrentModule;
 	shared_ptr<Function> CurrentFunction;

@@ -184,10 +184,17 @@ void Alchemist::Frame()
 								NodeBeingConnected.reset();
 								NodeBeingConnectedTo.reset();
 							}
+
+							NodeLastSelected.reset();
 							
 							// Look for a node under the mouse.
-							// If there is one, begin dragging it.
+							// If there is one, begin dragging or copy it.
 							NodeOnMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+							if(NodeOnMouse && Copy)
+							{
+								NodeOnMouse = NodeOnMouse->Clone();
+							}
 						}
 						else if(Event.button.button == 3 && !NodeOnMouse)
 						{
@@ -235,6 +242,8 @@ void Alchemist::Frame()
 							// If there is a node on the mouse, and the grid space below the mouse is clear, insert the node there.
 							if (NodeOnMouse)
 							{
+								NodeLastSelected = NodeOnMouse;
+								
 								Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
 								CurrentFunction->PlaceNode(NodeOnMouse, MouseGridPosition);
 
@@ -288,6 +297,8 @@ void Alchemist::Frame()
 					{
 						string OutCode;
 						vector<CompilationProblem> OutProblems;
+
+						cout << endl << "COMPILING" << endl;
 						
 						if(CurrentFunction->Emit(OutCode, OutProblems))
 						{
@@ -309,10 +320,54 @@ void Alchemist::Frame()
 								cout << "- " << OutProblems[i].Problem << endl;
 							}
 						}
+						else
+						{
+							cout << endl << "No problems detected." << endl;
+						}
 
 						// Leave the problems cached - we will display them until the code is recompiled, or a different function is opened.
 						// TODO do this per function?
 						ProblemsFromLastCompile = OutProblems;
+					}
+					else if(Event.key.keysym.sym == SDLK_LCTRL)
+					{
+						Copy = true;
+					}
+					else if(Event.key.keysym.sym == SDLK_DELETE)
+					{
+						shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
+
+						if (LastSelectedLock)
+						{
+							CurrentFunction->RemoveNode(LastSelectedLock);
+						}
+					}
+					else
+					{
+						shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
+
+						if (LastSelectedLock)
+						{
+							LastSelectedLock->HandleKeyPress(Event);
+						}
+					}
+					
+					break;
+				}
+				case SDL_KEYUP:
+				{
+					if (Event.key.keysym.sym == SDLK_LCTRL)
+					{
+						Copy = false;
+					}
+				}
+				case SDL_TEXTINPUT:
+				{
+					shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
+
+					if (LastSelectedLock)
+					{
+						LastSelectedLock->HandleTextInput(Event);
 					}
 					
 					break;
@@ -365,6 +420,20 @@ void Alchemist::Frame()
 		// Grid position to screen position
 		Point ScreenPosition = GridToScreen(Position);
 
+		SDL_Rect GridRect = {
+			ScreenPosition.X,
+			ScreenPosition.Y,
+			GridSize,
+			GridSize
+		};
+		
+		if(NodeOnGrid == NodeLastSelected.lock())
+		{
+			// Draw selection rectangle.
+			SDL_SetRenderDrawColor(Renderer, 200, 200, 200, 255);
+			SDL_RenderFillRect(Renderer, &GridRect);
+		}
+		
 		// Draw
 		NodeOnGrid->Draw(this, ScreenPosition, NodeOnGrid == NodeOnMouse);
 	}

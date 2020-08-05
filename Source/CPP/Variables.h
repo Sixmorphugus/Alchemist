@@ -43,5 +43,5 @@ struct NodeArgumentData
 	bool IsPattern = false;
 
 	/** Node linked from. */
-	shared_ptr<Node> Connector = nullptr;
+	weak_ptr<Node> Connector;
 };

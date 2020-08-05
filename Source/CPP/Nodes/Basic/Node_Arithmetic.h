@@ -154,7 +154,7 @@ public:
 		
 		if(shared_ptr<Node> LHS = GetConnector(0))
 		{
-			if(LHS->Emit(Output, Problems))
+			if (LHS->Emit(Output, Problems))
 			{
 				bLHS = true;
 			}
