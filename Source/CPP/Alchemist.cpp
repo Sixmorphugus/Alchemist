@@ -317,18 +317,69 @@ void Alchemist::DrawToolbar() const
 
 	for(int i = 0; i < (int)Options.size(); i++)
 	{
+		// Selection rectangle
+		SDL_Rect OptionSelectionRect = GetToolbarOptionSelectionRect(i);
+
+		int TextColorMod = 100;
+		
+		if (MousePos.IsInRectangle(OptionSelectionRect) || ToolbarOpenMenu == i)
+		{
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 100);
+			SDL_RenderFillRect(Renderer, &OptionSelectionRect);
+
+			TextColorMod = 0;
+		}
+
+		// Text
 		string OptionName = Options[i].Option;
 		Size OptionSize = Font->GetStringScreenSize(OptionName);
 		
 		SDL_Rect OptionRect = {
-			GetToolbarOptionX(i),
+			GetToolbarOptionX(i) + ToolbarPadding,
 			ToolbarPadding,
 			OptionSize.X,
 			OptionSize.Y
 		};
 
-		SDL_SetTextureColorMod(Font->GetStringTexture(OptionName), 40, 40, 40);
+		SDL_SetTextureColorMod(Font->GetStringTexture(OptionName), TextColorMod, TextColorMod, TextColorMod);
 		SDL_RenderCopy(Renderer, Font->GetStringTexture(OptionName), NULL, &OptionRect);
+	}
+
+	// Is a menu open?
+	if(ToolbarOpenMenu != -1)
+	{
+		// If so, show a dropdown with that menu's options.
+		for (int i = 0; i < (int)Options[ToolbarOpenMenu].SubOptions.size(); i++)
+		{
+			int TextColorMod = 100;
+			int AlphaMod = 100;
+			
+			// Draw option rect
+			SDL_Rect OptionRect = GetToolbarSubOptionRect(ToolbarOpenMenu, i);
+
+			if (MousePos.IsInRectangle(OptionRect) && Options[ToolbarOpenMenu].SelectFunctions[i])
+			{
+				TextColorMod = 0;
+				AlphaMod = 150;
+			}
+			
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, AlphaMod);
+			SDL_RenderFillRect(Renderer, &OptionRect);
+			
+			// Draw option text
+			string OptionName = Options[ToolbarOpenMenu].SubOptions[i];
+			Size TextSize = Font->GetStringScreenSize(OptionName);
+
+			SDL_Rect TextRect = {
+				OptionRect.x + ToolbarPadding,
+				OptionRect.y + ToolbarPadding,
+				TextSize.X,
+				TextSize.Y
+			};
+			
+			SDL_SetTextureColorMod(Font->GetStringTexture(OptionName), TextColorMod, TextColorMod, TextColorMod);
+			SDL_RenderCopy(Renderer, Font->GetStringTexture(OptionName), NULL, &TextRect);
+		}
 	}
 }
 
@@ -619,6 +670,62 @@ void Alchemist::DrawGrid() const
 
 bool Alchemist::ToolbarHandleEvent(SDL_Event& Event)
 {
+	switch(Event.type)
+	{
+		case SDL_MOUSEBUTTONDOWN:
+		{
+			bool ClickedRootButton = false;
+			
+			if(Event.button.button == 1)
+			{
+				auto Options = GetToolbarOptions();
+
+				// If the mouse is over a main toolbar option, open that toolbar menu.
+				for (int i = 0; i < (int)Options.size(); i++)
+				{
+					SDL_Rect OptionRect = GetToolbarOptionSelectionRect(i);
+
+					if(MousePos.IsInRectangle(OptionRect))
+					{
+						ToolbarOpenMenu = i;
+						ClickedRootButton = true;
+					}
+				}
+
+				// If we didn't just click a root button, it's possible we just clicked a menu button.
+				if(!ClickedRootButton && ToolbarOpenMenu != -1)
+				{
+					for (int i = 0; i < (int)Options[ToolbarOpenMenu].SubOptions.size(); i++)
+					{
+						SDL_Rect OptionRect = GetToolbarSubOptionRect(ToolbarOpenMenu, i);
+
+						if(Point(Event.button.x, Event.button.y).IsInRectangle(OptionRect))
+						{
+							// We have just clicked option i in menu ToolbarOpenMenu.
+							// Call its on click function.
+							if(Options[ToolbarOpenMenu].SelectFunctions[i])
+							{
+								Options[ToolbarOpenMenu].SelectFunctions[i]();
+							}
+						}
+					}
+				}
+			}
+
+			if(!ClickedRootButton)
+			{
+				ToolbarOpenMenu = -1;
+			}
+			
+			// If the mouse is over the toolbar, we always consume the mouse press.
+			// Otherwise, the mouse press will be consumed if a menu is open.
+			if(MousePos.Y < ToolbarHeight || ToolbarOpenMenu != -1)
+			{
+				return true;
+			}
+		}
+	}
+	
 	return false;
 }
 
@@ -939,10 +1046,12 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 	// - Change signature
 	// - Delete
 	{
+		string FuncString = "Function (" + CurrentFunction->GetName() + ":" + to_string(CurrentFunction->GetArity()) + ")...";
+		
 		if (CurrentFunction->GetName() != "main")
 		{
 			ToolbarOptionData Options = {
-				CurrentFunction->GetName() + ":" + to_string(CurrentFunction->GetArity()),
+				FuncString,
 				{ "Change Signature...", "Delete" },
 				{
 					[&]()
@@ -961,7 +1070,7 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 		else
 		{
 			ToolbarOptionData Options = {
-				CurrentFunction->GetName() + ":" + to_string(CurrentFunction->GetArity()),
+				FuncString,
 				{ "You cannot edit or delete the \"main\" function." },
 				{ nullptr }
 			};
@@ -976,7 +1085,7 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 	// - Generate code
 	{
 		ToolbarOptionData Options = {
-			"Program",
+			"Program...",
 			{ "New Function", "Generate Code" },
 			{
 				[&]()
@@ -998,7 +1107,7 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 	// - Copyright Chris Sixsmith 2020.
 	{
 		ToolbarOptionData Options = {
-			"About",
+			"About...",
 			{ "Version 1", "Copyright Chris Sixsmith 2020." },
 			{ nullptr, nullptr }
 		};
@@ -1011,14 +1120,53 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 
 int Alchemist::GetToolbarOptionX(int OptionId) const
 {
-	int X = ToolbarPadding + 48;
+	int X = ToolbarPadding + 64;
 	auto Options = GetToolbarOptions();
 	shared_ptr<Resource_Font> Font = GetDefaultFont();
 	
 	for(int i = 0; i < OptionId && i < Options.size(); i++)
 	{
-		X += Font->GetStringScreenSize(Options[i].Option).X + (ToolbarPadding * 6);
+		X += Font->GetStringScreenSize(Options[i].Option).X + (ToolbarPadding * 4);
 	}
 	
 	return X;
+}
+
+SDL_Rect Alchemist::GetToolbarOptionSelectionRect(int OptionId) const
+{
+	auto Options = GetToolbarOptions();
+	
+	shared_ptr<Resource_Font> Font = GetDefaultFont();
+	
+	return {
+		GetToolbarOptionX(OptionId),
+		0,
+		Font->GetStringScreenSize(Options[OptionId].Option).X + (ToolbarPadding * 4),
+		ToolbarHeight + (ToolbarPadding * 2)
+	};
+}
+
+SDL_Rect Alchemist::GetToolbarSubOptionRect(int OptionId, int SubOptionId) const
+{
+	int SubOptionMenuWidth = 0;
+	auto Options = GetToolbarOptions();
+
+	shared_ptr<Resource_Font> Font = GetDefaultFont();
+	
+	for(int i = 0; i < Options[OptionId].SubOptions.size(); i++)
+	{
+		int W = Font->GetStringScreenSize(Options[OptionId].SubOptions[i]).X;
+		
+		if(SubOptionMenuWidth < W)
+		{
+			SubOptionMenuWidth = W;
+		}
+	}
+	
+	return {
+		GetToolbarOptionX(OptionId),
+		ToolbarHeight + (ToolbarPadding * 2) + (ToolbarOptionHeight * SubOptionId),
+		SubOptionMenuWidth + (ToolbarPadding * 2),
+		ToolbarOptionHeight
+	};
 }

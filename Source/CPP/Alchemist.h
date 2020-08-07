@@ -16,6 +16,7 @@ const int SidebarPadding = (SidebarWidth - (SidebarItemCount * GridSize)) / 8;
 const int ConnectMenuOptionPadding = 16;
 const int ToolbarPadding = 4;
 const int ToolbarHeight = 40;
+const int ToolbarOptionHeight = 40;
 
 struct ToolbarOptionData
 {
@@ -138,6 +139,12 @@ private:
 
 	/** Calculates toolbar option X position. */
 	int GetToolbarOptionX(int OptionId) const;
+
+	/** Calculates toolbar option rectangle. */
+	SDL_Rect GetToolbarOptionSelectionRect(int OptionId) const;
+
+	/** Calculates toolbar suboption rectangle. */
+	SDL_Rect GetToolbarSubOptionRect(int OptionId, int SubOptionId) const;
 	
 private:
 	bool Close = false;
@@ -167,7 +174,7 @@ private:
 	Module CurrentModule;
 	shared_ptr<Function> CurrentFunction;
 
-	
+	int ToolbarOpenMenu = -1;
 
 	vector<CompilationProblem> ProblemsFromLastCompile;
 };
