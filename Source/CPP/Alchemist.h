@@ -14,6 +14,15 @@ const int SidebarWidth = 400;
 const int SidebarItemCount = 4;
 const int SidebarPadding = (SidebarWidth - (SidebarItemCount * GridSize)) / 8;
 const int ConnectMenuOptionPadding = 16;
+const int ToolbarPadding = 4;
+const int ToolbarHeight = 40;
+
+struct ToolbarOptionData
+{
+	string Option;
+	vector<string> SubOptions;
+	vector<function<void()>> SelectFunctions;
+};
 
 class Function;
 
@@ -26,10 +35,11 @@ public:
 	/** Alchemist's destructor shuts down an instance of the environment. */
 	~Alchemist();
 
-	/** Run() will run the environment until the user closes it. */
+	/** Will run the environment until the user closes it. */
 	void Run();
 
-	
+	/** Will attempt to compile the program the user has created. */
+	void Compile();
 	
 	/** Core loop inner function. Processes a single Frame when called. */
 	void Frame();
@@ -64,14 +74,16 @@ public:
 	Point GetCategoryButtonPosition(int Index) const;
 
 	/** Returns the renderer */
-	SDL_Renderer* GetRenderer() { return Renderer; }
+	SDL_Renderer* GetRenderer() const { return Renderer; }
 
 	/** Returns the node manager */
 	NodeManager* GetNodeManager() { return &Nodes; }
+	const NodeManager* GetNodeManager() const { return &Nodes; }
 
 	/** Returns the resource manager */
 	ResourceManager* GetResourceManager() { return &Resources; }
-
+	const ResourceManager* GetResourceManager() const { return &Resources; }
+	
 	/** Returns the function being edited. */
 	shared_ptr<Function> GetCurrentFunction() { return CurrentFunction; }
 
@@ -85,17 +97,47 @@ public:
 	Size GetOptionsMenuPosition(const shared_ptr<Node>& NodeOnGrid) const;
 	
 	/** Returns size of options in the options menu rect spawned from given node. */
-	Size GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid, const shared_ptr<Resource_Font>& FontResource) const;
+	Size GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid) const;
 
 private:	
 	/** Gets window start size. */
 	Size GetWindowStartSize() const;
 
+	/** Draws the toolbar. */
+	void DrawToolbar() const;
+	
+	/** Draws the node palette. */
+	void DrawNodePalette() const;
+	
+	/** Draws the grid. */
+	void DrawGrid() const;
+
+	/** Tries to make the toolbar handle an event. */
+	bool ToolbarHandleEvent(SDL_Event& Event);
+	
+	/** Tries to make the palette handle an event. */
+	bool PaletteHandleEvent(SDL_Event& Event);
+	
+	/** Tries to make the grid handle an event. */
+	bool GridHandleEvent(SDL_Event& Event);
+
+	/** Gets palette selection. */
+	int GetPaletteSelection(const Category& CurrentCategory) const;
+	
 	/** Draws connector relative to grid. */
-	void DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2);
+	void DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2) const;
 
 	/** Draws tooltip. */
-	void DrawTooltip(const shared_ptr<Node>& node);
+	void DrawTooltip(const shared_ptr<Node>& node) const;
+
+	/** Returns the default font. */
+	shared_ptr<Resource_Font> GetDefaultFont() const;
+
+	/** Returns the current list of toolbar options. */
+	vector<ToolbarOptionData> GetToolbarOptions() const;
+
+	/** Calculates toolbar option X position. */
+	int GetToolbarOptionX(int OptionId) const;
 	
 private:
 	bool Close = false;
@@ -124,6 +166,8 @@ private:
 
 	Module CurrentModule;
 	shared_ptr<Function> CurrentFunction;
+
+	
 
 	vector<CompilationProblem> ProblemsFromLastCompile;
 };

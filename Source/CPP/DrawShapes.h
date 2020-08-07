@@ -5,6 +5,6 @@
 #include "Libs.h"
 #include "2DPositioning.h"
 
-void DrawConnectorArrow(class Alchemist* Instance, Point Start, Point End);
+void DrawConnectorArrow(const class Alchemist* Instance, Point Start, Point End);
 
-void DrawThickRectangle(class Alchemist* Instance, SDL_Rect Rect, int Thickness);
+void DrawThickRectangle(const class Alchemist* Instance, SDL_Rect Rect, int Thickness);

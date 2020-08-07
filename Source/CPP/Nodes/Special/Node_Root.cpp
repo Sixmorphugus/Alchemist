@@ -20,7 +20,7 @@ shared_ptr<Node> Node_Root::Clone() const
 	return make_shared<Node_Root>(*this);
 }
 
-void Node_Root::Draw(Alchemist* Instance, const Point& Position, bool IsPreview) const
+void Node_Root::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview) const
 {
 	Node::Draw(Instance, Position, IsPreview);
 

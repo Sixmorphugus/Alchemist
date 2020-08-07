@@ -15,7 +15,7 @@ public:
 	virtual shared_ptr<Node> Clone() const override;
 	virtual string GetDisplayName() const override { return "Variable (" + Name + ")"; }
 	virtual string GetCategory() const override { return "Basic"; }
-	virtual void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const override;
+	virtual void Draw(const Alchemist* Instance, const Point& Position, bool IsPreview = false) const override;
 	//virtual void Load(const ifstream& FileStream) override;
 	//virtual void Save(const ofstream& FileStream) const override;
 	//virtual size_t GetDataSize() const override;

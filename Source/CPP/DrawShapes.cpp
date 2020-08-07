@@ -3,7 +3,7 @@
 #include "DrawShapes.h"
 #include "Alchemist.h"
 
-void DrawConnectorArrow(Alchemist* Instance, Point Start, Point End)
+void DrawConnectorArrow(const Alchemist* Instance, Point Start, Point End)
 {
 	// Draw our first line, the actual body of the arrow.
 	SDL_RenderDrawLine(Instance->GetRenderer(), Start.X, Start.Y, End.X, End.Y);
@@ -25,7 +25,7 @@ void DrawConnectorArrow(Alchemist* Instance, Point Start, Point End)
 	SDL_RenderDrawLine(Instance->GetRenderer(), P2.X, P2.Y, End.X, End.Y);
 }
 
-void DrawThickRectangle(Alchemist* Instance, SDL_Rect Rect, int Thickness)
+void DrawThickRectangle(const Alchemist* Instance, SDL_Rect Rect, int Thickness)
 {
 	for(int i = 0; i < Thickness; i++)
 	{

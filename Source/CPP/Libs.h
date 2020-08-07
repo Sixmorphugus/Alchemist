@@ -24,5 +24,6 @@
 #include <memory>
 #include <filesystem>
 #include <algorithm>
+#include <functional>
 
 using namespace std;

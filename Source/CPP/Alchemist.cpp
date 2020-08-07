@@ -89,36 +89,46 @@ void Alchemist::Run()
 #endif
 }
 
+void Alchemist::Compile()
+{
+	string OutCode;
+	vector<CompilationProblem> OutProblems;
+
+	cout << endl << "COMPILING" << endl;
+
+	if (CurrentFunction->Emit(OutCode, OutProblems))
+	{
+		// Print the code
+		cout << OutCode << endl;
+	}
+	else
+	{
+		cout << "Compile failed!" << endl;
+	}
+
+	// Always print the problems
+	if (OutProblems.size() > 0)
+	{
+		cout << endl << "Detected Problems:" << endl;
+
+		for (int i = 0; i < OutProblems.size(); i++)
+		{
+			cout << "- " << OutProblems[i].Problem << endl;
+		}
+	}
+	else
+	{
+		cout << endl << "No problems detected." << endl;
+	}
+
+	// Leave the problems cached - we will display them until the code is recompiled, or a different function is opened.
+	// TODO do this per function?
+	ProblemsFromLastCompile = OutProblems;
+}
+
 void Alchemist::Frame()
 {
 	assert(CurrentFunction);
-
-	int Width;
-	int Height;
-
-	SDL_GetWindowSize(Window, &Width, &Height);
-
-	vector<Category> CategorisedNodes = Nodes.GetCategorisedNodes(); // todo: constantly calling this is terrible!
-	const Category& CurrentCategory = CategorisedNodes[PaletteCategory];
-
-	shared_ptr<Resource_Font> Font = Resources.GetResource<Resource_Font>("Font.ttf");
-	
-
-	/////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////
-
-
-	// Calculate the category item the mouse is currently over (null if none)
-	int PaletteSelection = -1;
-
-	for (int i = 0; i < CurrentCategory.Nodes.size(); i++)
-	{
-		Point NodePos = GetPaletteItemPosition(i);
-		if (MousePos.X > NodePos.X&& MousePos.Y > NodePos.Y&& MousePos.X <= NodePos.X + GridSize && MousePos.Y <= NodePos.Y + GridSize)
-		{
-			PaletteSelection = i;
-		}
-	}
 
 
 	/////////////////////////////////////////////////////////////////
@@ -131,6 +141,7 @@ void Alchemist::Frame()
 
 		while (SDL_PollEvent(&Event))
 		{
+			// Core events
 			switch (Event.type)
 			{
 				case SDL_QUIT:
@@ -138,468 +149,205 @@ void Alchemist::Frame()
 					Close = true;
 					break;
 				}
-				case SDL_MOUSEBUTTONDOWN:
+			}
+			
+			if (!ToolbarHandleEvent(Event))
+			{
+				if (!PaletteHandleEvent(Event))
 				{
-					if (Event.motion.x < Width - SidebarWidth - GridSize)
-					{
-						Point EventMousePosition(Event.motion.x, Event.motion.y);
-						
-						Point MouseGridPosition = ScreenToGrid(EventMousePosition);
-						
-						if (Event.button.button == 2)
-						{
-							ViewDrag = true;
-						}
-						else if (Event.button.button == 1)
-						{
-							if (NodeBeingConnected)
-							{
-								if(NodeBeingConnectedTo)
-								{
-									// An options menu is open near this node.
-									// Find if we just clicked any option.
-									// The position of the menu options is fairly easy to work out.
-									Point OptionPosition = GetOptionsMenuPosition(NodeBeingConnectedTo);
-									Size OptionSize = GetOptionsMenuOptionSize(NodeBeingConnectedTo, Font);
-
-									for(int i = 0; i < NodeBeingConnectedTo->GetNumArguments(); i++)
-									{
-										SDL_Rect OptionRect = {
-											OptionPosition.X,
-											OptionPosition.Y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
-											OptionSize.X,
-											OptionSize.Y
-										};
-
-										if(EventMousePosition.IsInRectangle(OptionRect))
-										{
-											// Make a connection between arg i and the node, being connected, then break.
-											NodeBeingConnectedTo->SetConnector(NodeBeingConnected, i);
-											break;
-										}
-									}
-								}
-								
-								// Kill any pending connection.
-								NodeBeingConnected.reset();
-								NodeBeingConnectedTo.reset();
-							}
-
-							NodeLastSelected.reset();
-							
-							// Look for a node under the mouse.
-							// If there is one, begin dragging or copy it.
-							NodeOnMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
-
-							if(NodeOnMouse && Copy)
-							{
-								NodeOnMouse = NodeOnMouse->Clone();
-							}
-						}
-						else if(Event.button.button == 3 && !NodeOnMouse)
-						{
-							NodeBeingConnectedTo.reset();
-							
-							// Look for a node under the mouse.
-							// If there is one, start creating a connector from this node.
-							NodeBeingConnected = CurrentFunction->GetNodeAt(MouseGridPosition);
-						}
-					}
-					else
-					{
-						// Pick up the palette selection.
-						if (PaletteSelection != -1)
-						{
-							NodeOnMouse = CurrentCategory.Nodes[PaletteSelection]->Clone();
-						}
-						else
-						{
-							// If there is no palette selection, look for the mouse being over a category button
-							if(Event.motion.x < Width - SidebarWidth && Event.motion.x > Width - SidebarWidth - GridSize)
-							{
-								int Category = Event.motion.y / GridSize;
-
-								if(Category < CategorisedNodes.size())
-								{
-									PaletteCategory = Category;
-								}
-							}
-						}
-					}
-
-					break;
-				}
-				case SDL_MOUSEBUTTONUP:
-				{
-					if (Event.motion.x < Width - SidebarWidth)
-					{
-						if (Event.button.button == 2)
-						{
-							ViewDrag = false;
-						}
-						else if (Event.button.button == 1)
-						{
-							// If there is a node on the mouse, and the grid space below the mouse is clear, insert the node there.
-							if (NodeOnMouse)
-							{
-								NodeLastSelected = NodeOnMouse;
-								
-								Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
-								CurrentFunction->PlaceNode(NodeOnMouse, MouseGridPosition);
-
-								NodeOnMouse.reset();
-							}
-						}
-						else if (Event.button.button == 3)
-						{
-							// If there is a connector being dragged, connect it to the node it was dropped on. Always stop dragging at this point
-							if(NodeBeingConnected)
-							{
-								// If we dropped on another node, bring up the second stage connecting menu!
-								Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
-								NodeBeingConnectedTo = CurrentFunction->GetNodeAt(MouseGridPosition);
-
-								if(!NodeBeingConnectedTo || NodeBeingConnectedTo == NodeBeingConnected || NodeBeingConnectedTo->GetNumArguments() == 0)
-								{
-									NodeBeingConnected.reset();
-									NodeBeingConnectedTo.reset();
-								}
-							}
-						}
-					}
-					else
-					{
-						if (NodeOnMouse)
-						{
-							CurrentFunction->RemoveNode(NodeOnMouse);
-							NodeOnMouse.reset();
-						}
-					}
-
-					break;
-				}
-				case SDL_MOUSEMOTION:
-				{
-					MousePos.X = Event.motion.x;
-					MousePos.Y = Event.motion.y;
-
-					if (ViewDrag)
-					{
-						ViewTopLeft.X -= Event.motion.xrel;
-						ViewTopLeft.Y -= Event.motion.yrel;
-					}
-
-					break;
-				}
-				case SDL_KEYDOWN:
-				{
-					if(Event.key.keysym.sym == SDLK_F5)
-					{
-						string OutCode;
-						vector<CompilationProblem> OutProblems;
-
-						cout << endl << "COMPILING" << endl;
-						
-						if(CurrentFunction->Emit(OutCode, OutProblems))
-						{
-							// Print the code
-							cout << OutCode << endl;
-						}
-						else
-						{
-							cout << "Compile failed!" << endl;
-						}
-
-						// Always print the problems
-						if(OutProblems.size() > 0)
-						{
-							cout << endl << "Detected Problems:" << endl;
-
-							for(int i = 0; i < OutProblems.size(); i++)
-							{
-								cout << "- " << OutProblems[i].Problem << endl;
-							}
-						}
-						else
-						{
-							cout << endl << "No problems detected." << endl;
-						}
-
-						// Leave the problems cached - we will display them until the code is recompiled, or a different function is opened.
-						// TODO do this per function?
-						ProblemsFromLastCompile = OutProblems;
-					}
-					else if(Event.key.keysym.sym == SDLK_LCTRL)
-					{
-						Copy = true;
-					}
-					else if(Event.key.keysym.sym == SDLK_DELETE)
-					{
-						shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
-
-						if (LastSelectedLock)
-						{
-							CurrentFunction->RemoveNode(LastSelectedLock);
-						}
-					}
-					else
-					{
-						shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
-
-						if (LastSelectedLock)
-						{
-							LastSelectedLock->HandleKeyPress(Event);
-						}
-					}
-					
-					break;
-				}
-				case SDL_KEYUP:
-				{
-					if (Event.key.keysym.sym == SDLK_LCTRL)
-					{
-						Copy = false;
-					}
-				}
-				case SDL_TEXTINPUT:
-				{
-					shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
-
-					if (LastSelectedLock)
-					{
-						LastSelectedLock->HandleTextInput(Event);
-					}
-					
-					break;
+					GridHandleEvent(Event);
 				}
 			}
 		}
 	}
 
+	DrawGrid();
+	DrawNodePalette();
+	DrawToolbar();
+	
+	// Finish
+	SDL_RenderPresent(Renderer);
+}
 
-	/////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////
+Point Alchemist::ScreenToGraph(const Point& ScreenPosition) const
+{
+	return ScreenPosition + ViewTopLeft;
+}
 
+Point Alchemist::GraphToScreen(const Point& GraphPosition) const
+{
+	return GraphPosition - ViewTopLeft;
+}
 
-	// Draw background
-	SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 255);
-	SDL_RenderClear(Renderer);
+Point Alchemist::GraphToGrid(const Point& GraphPosition) const
+{
+	return GraphPosition / GridSize;
+}
 
-	// Draw grid
-	SDL_SetRenderDrawColor(Renderer, 220, 220, 220, 255);
+Point Alchemist::GridToGraph(const Point& GridPosition) const
+{
+	return GridPosition * GridSize;
+}
 
-	int x = -ViewTopLeft.X % GridSize;
-	int y = -ViewTopLeft.Y % GridSize;
+Point Alchemist::GridToScreen(const Point& GridPosition) const
+{
+	return GraphToScreen(GridToGraph(GridPosition));
+}
 
-	for (; x < Width; x += GridSize)
+Point Alchemist::ScreenToGrid(const Point& ScreenPosition) const
+{
+	return GraphToGrid(ScreenToGraph(ScreenPosition));
+}
+
+Point Alchemist::GetPaletteItemPosition(int Index) const
+{
+	Point Out
 	{
-		SDL_RenderDrawLine(Renderer, x, 0, x, Height);
+		 GetWindowSize().X + SidebarPadding - SidebarWidth + ((SidebarWidth / SidebarItemCount) * (Index % SidebarItemCount)),
+		 SidebarPadding + ((SidebarWidth / SidebarItemCount) * (Index / SidebarItemCount)) + ToolbarHeight + (ToolbarPadding * 2)
+	};
+	
+	return Out;
+}
+
+Point Alchemist::GetCategoryButtonPosition(int Index) const
+{
+	Point Out
+	{
+		 GetWindowSize().X - SidebarWidth - GridSize,
+		 (Index * GridSize) + ToolbarHeight + (ToolbarPadding * 2)
+	};
+
+	return Out;
+}
+
+#if IS_WEB
+EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
+{
+	SDL_SetWindowSize(Window, UiEvent->windowInnerWidth, UiEvent->windowInnerHeight);
+	return EM_TRUE;
+}
+#endif
+
+Size Alchemist::GetWindowSize() const
+{
+	Size Out;
+
+	SDL_GetWindowSize(Window, &Out.X, &Out.Y);
+
+	return Out;
+}
+
+Size Alchemist::GetOptionsMenuPosition(const shared_ptr<Node>& NodeOnGrid) const
+{
+	return Size{ GridToScreen(NodeBeingConnectedTo->GetGridPosition() + Point(1, 1)).X + 2, GridToScreen(NodeBeingConnectedTo->GetGridPosition() + Point(1, 1)).Y + 2 };
+}
+
+Size Alchemist::GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid) const
+{
+	shared_ptr<Resource_Font> FontResource = GetDefaultFont();
+	
+	Size SizeOut;
+
+	for (int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
+	{
+		string Argument = NodeOnGrid->GetArgumentName(i);
+
+		Size StringSize = FontResource->GetStringScreenSize(Argument);
+
+		if (StringSize.X > SizeOut.X)
+		{
+			SizeOut.X = StringSize.X;
+		}
+
+		if (StringSize.Y > SizeOut.Y)
+		{
+			SizeOut.Y = StringSize.Y;
+		}
 	}
 
-	for (; y < Height; y += GridSize)
-	{
-		SDL_RenderDrawLine(Renderer, 0, y, Width, y);
-	}
+	return SizeOut;
+}
 
-	// If 0, 0 is on screen, draw it
-	SDL_SetRenderDrawColor(Renderer, 150, 150, 150, 255);
+Size Alchemist::GetWindowStartSize() const
+{
+#if IS_WEB
+	return { GetWindowWidthJS(), GetWindowHeightJS() };
+#else
+	return { 1600, 900 };
+#endif
+}
+
+void Alchemist::DrawToolbar() const
+{
+	shared_ptr<Resource_Font> Font = GetDefaultFont();
 	
-	SDL_RenderDrawLine(Renderer, ViewTopLeft.X, -ViewTopLeft.Y, Width, -ViewTopLeft.Y);
-	SDL_RenderDrawLine(Renderer, -ViewTopLeft.X, ViewTopLeft.Y, -ViewTopLeft.X, Height);
-
-
-	/////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////
-
+	// Render background for toolbar in one go
+	SDL_Rect ToolbarRect = {
+		0,
+		0,
+		GetWindowSize().X,
+		ToolbarHeight + (ToolbarPadding * 2)
+	};
 	
-	// Draw nodes
-	for(shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodes())
+	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 100);
+	SDL_RenderFillRect(Renderer, &ToolbarRect);
+
+	ToolbarRect.y = ToolbarHeight + (ToolbarPadding * 2) - 2;
+	ToolbarRect.h = 2;
+	
+	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+	SDL_RenderFillRect(Renderer, &ToolbarRect);
+
+	// Render logo
+	Size LogoSize = Font->GetStringScreenSize("@");
+
+	SDL_Rect OptionRect = {
+		ToolbarPadding * 2,
+		ToolbarPadding,
+		LogoSize.X,
+		LogoSize.Y
+	};
+
+	SDL_SetTextureColorMod(Font->GetStringTexture("@"), 0, 0, 0);
+	SDL_RenderCopy(Renderer, Font->GetStringTexture("@"), NULL, &OptionRect);
+	
+	// Render individual buttons
+	auto Options = GetToolbarOptions();
+
+	for(int i = 0; i < (int)Options.size(); i++)
 	{
-		Point Position = NodeOnGrid->GetGridPosition();
-
-		// Grid position to screen position
-		Point ScreenPosition = GridToScreen(Position);
-
-		SDL_Rect GridRect = {
-			ScreenPosition.X,
-			ScreenPosition.Y,
-			GridSize,
-			GridSize
+		string OptionName = Options[i].Option;
+		Size OptionSize = Font->GetStringScreenSize(OptionName);
+		
+		SDL_Rect OptionRect = {
+			GetToolbarOptionX(i),
+			ToolbarPadding,
+			OptionSize.X,
+			OptionSize.Y
 		};
-		
-		if(NodeOnGrid == NodeLastSelected.lock())
-		{
-			// Draw selection rectangle.
-			SDL_SetRenderDrawColor(Renderer, 200, 200, 200, 255);
-			SDL_RenderFillRect(Renderer, &GridRect);
-		}
-		
-		// Draw
-		NodeOnGrid->Draw(this, ScreenPosition, NodeOnGrid == NodeOnMouse);
+
+		SDL_SetTextureColorMod(Font->GetStringTexture(OptionName), 40, 40, 40);
+		SDL_RenderCopy(Renderer, Font->GetStringTexture(OptionName), NULL, &OptionRect);
 	}
+}
 
-	// Draw node connections
-	for (shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodes())
-	{
-		for(int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
-		{
-			if(shared_ptr<Node> Connector = NodeOnGrid->GetConnector(i))
-			{
-				SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
-				DrawConnectorArrowOnGrid(Connector->GetGridPosition(), NodeOnGrid->GetGridPosition());
-			}
-		}
-	}
+void Alchemist::DrawNodePalette() const
+{
+	vector<Category> CategorisedNodes = Nodes.GetCategorisedNodes(); // todo: constantly calling this is terrible!
+	const Category& CurrentCategory = CategorisedNodes[PaletteCategory];
 
-	// Draw node being dragged
-	if (NodeOnMouse)
-	{
-		// Show a transparent preview of the node being dragged;
-		// Hilight the grid space hovered in blue if empty, or red if occupied.
-		// If the hovered grid space is empty, lock the node to it, otherwise move it exactly to the position of the mouse.
-		Point DrawPos = MousePos;
-
-		if (MousePos.X < Width - SidebarWidth)
-		{
-			Point MouseGridPosition = ScreenToGrid(MousePos);
-			Point GridPos = GridToScreen(MouseGridPosition);
-			shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
-
-			if (!NodeUnderMouse || NodeUnderMouse == NodeOnMouse)
-			{
-				DrawPos = GridPos;
-				SDL_SetRenderDrawColor(Renderer, 100, 100, 255, 100);
-			}
-			else
-			{
-				SDL_SetRenderDrawColor(Renderer, 255, 100, 100, 100);
-			}
-
-			SDL_Rect Rect{ GridPos.X, GridPos.Y, GridSize, GridSize };
-
-			SDL_RenderFillRect(Renderer, &Rect);
-		}
-		else
-		{
-			// TODO somehow show that releasing the node here will delete it?
-		}
-
-		NodeOnMouse->Draw(this, DrawPos, true);
-	}
-	else
-	{
-		// Draw node captions of any node under the mouse
-		Point MouseGridPosition = ScreenToGrid(MousePos);
-		shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
-
-		if(NodeUnderMouse)
-		{
-			DrawTooltip(NodeUnderMouse);
-		}
-	}
-
-	// Draw connector being dragged
-	if(NodeBeingConnected)
-	{
-		if(!NodeBeingConnectedTo) // de-facto "dragging" state
-		{
-			Point MouseGridPosition = ScreenToGrid(MousePos);
-			shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
-			
-			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 150);
-
-			if(NodeUnderMouse)
-			{
-				if(NodeUnderMouse->GetNumArguments())
-				{
-					SDL_SetRenderDrawColor(Renderer, 0, 0, 255, 150);
-				}
-				else
-				{
-					SDL_SetRenderDrawColor(Renderer, 255, 0, 0, 150);
-				}
-			}
-			
-			DrawConnectorArrowOnGrid(NodeBeingConnected->GetGridPosition(), MouseGridPosition);
-		}
-		else // de-facto "connecting" state
-		{
-			SDL_SetRenderDrawColor(Renderer, 0, 0, 255, 255);
-			DrawConnectorArrowOnGrid(NodeBeingConnected->GetGridPosition(), NodeBeingConnectedTo->GetGridPosition());
-
-			Point OptionPosition = GetOptionsMenuPosition(NodeBeingConnected);
-			Size OptionSize = GetOptionsMenuOptionSize(NodeBeingConnectedTo, Font);
-
-			SDL_Rect OptionsRect = {
-				OptionPosition.X,
-				OptionPosition.Y,
-				OptionSize.X,
-				OptionSize.Y
-			};
-			
-			// Turn per-option size into full menu size.
-			OptionsRect.h *= NodeBeingConnectedTo->GetNumArguments();
-
-			// Add padding
-			OptionsRect.w += ConnectMenuOptionPadding;
-			OptionsRect.h += ConnectMenuOptionPadding;
-			
-			// Draw pop-out variable list
-			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 200);
-			SDL_RenderFillRect(Renderer, &OptionsRect);
-
-			// Draw outline (x2)
-			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
-			DrawThickRectangle(this, OptionsRect, 2);
-
-			for (int i = 0; i < NodeBeingConnectedTo->GetNumArguments(); i++)
-			{
-				// For rendering string
-				string Argument = NodeBeingConnectedTo->GetArgumentName(i);
-
-				Size StringSize = Font->GetStringScreenSize(Argument);
-
-				SDL_Rect Rect = {
-					OptionsRect.x + (ConnectMenuOptionPadding / 2),
-					OptionsRect.y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
-					StringSize.X,
-					StringSize.Y
-				};
-
-				// For rendering highlight
-				SDL_Rect HighlightRect = {
-					OptionsRect.x,
-					OptionsRect.y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
-					OptionsRect.w,
-					OptionSize.Y
-				};
-
-				// Render highlight first, IF the mouse is within its area.
-				if(MousePos.IsInRectangle(HighlightRect))
-				{
-					SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 100);
-					SDL_RenderFillRect(Renderer, &HighlightRect);
-				}
-
-				// Then string
-				SDL_RenderCopy(Renderer, Font->GetStringTexture(Argument), NULL, &Rect);
-			}
-		}
-	}
-
-
-	/////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////
-
+	// Calculate the category item the mouse is currently over (null if none)
+	int PaletteSelection = GetPaletteSelection(CurrentCategory);
 
 	// Render palette
-	SDL_Rect PaletteRect{ Width - SidebarWidth, 0, SidebarWidth, Height };
+	SDL_Rect PaletteRect{ GetWindowSize().X - SidebarWidth, ToolbarHeight + (ToolbarPadding * 2), SidebarWidth, GetWindowSize().Y };
 
 	SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 100);
 	SDL_RenderFillRect(Renderer, &PaletteRect);
 
 	// Render items in selected palette category
-	for (int i = 0; i < CurrentCategory.Nodes.size(); i++)
+	for (int i = 0; i < (int)CurrentCategory.Nodes.size(); i++)
 	{
 		if (i == PaletteSelection)
 		{
@@ -654,131 +402,489 @@ void Alchemist::Frame()
 	PaletteRect.w = 2;
 
 	// top half of palette border
-	PaletteRect.h = GetCategoryButtonPosition(PaletteCategory).Y - 1;
+	PaletteRect.h = GetCategoryButtonPosition(PaletteCategory).Y - ToolbarHeight - (ToolbarPadding * 2);
 	SDL_RenderFillRect(Renderer, &PaletteRect);
 
 	// bottom half of palette border
 	PaletteRect.y = GetCategoryButtonPosition(PaletteCategory).Y + GridSize;
-	PaletteRect.h = Height - GetCategoryButtonPosition(PaletteCategory).Y + GridSize;
+	PaletteRect.h = GetWindowSize().Y - GetCategoryButtonPosition(PaletteCategory).Y + GridSize - ToolbarHeight - (ToolbarPadding * 2);
 	SDL_RenderFillRect(Renderer, &PaletteRect);
-
-
-	/////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////
-
-
-	// Finish
-	SDL_RenderPresent(Renderer);
 }
 
-Point Alchemist::ScreenToGraph(const Point& ScreenPosition) const
+void Alchemist::DrawGrid() const
 {
-	return ScreenPosition + ViewTopLeft;
-}
-
-Point Alchemist::GraphToScreen(const Point& GraphPosition) const
-{
-	return GraphPosition - ViewTopLeft;
-}
-
-Point Alchemist::GraphToGrid(const Point& GraphPosition) const
-{
-	return GraphPosition / GridSize;
-}
-
-Point Alchemist::GridToGraph(const Point& GridPosition) const
-{
-	return GridPosition * GridSize;
-}
-
-Point Alchemist::GridToScreen(const Point& GridPosition) const
-{
-	return GraphToScreen(GridToGraph(GridPosition));
-}
-
-Point Alchemist::ScreenToGrid(const Point& ScreenPosition) const
-{
-	return GraphToGrid(ScreenToGraph(ScreenPosition));
-}
-
-Point Alchemist::GetPaletteItemPosition(int Index) const
-{
-	Point Out
-	{
-		 GetWindowSize().X + SidebarPadding - SidebarWidth + ((SidebarWidth / SidebarItemCount) * (Index % SidebarItemCount)),
-		 SidebarPadding + ((SidebarWidth / SidebarItemCount) * (Index / SidebarItemCount))
-	};
+	shared_ptr<Resource_Font> Font = GetDefaultFont();
 	
-	return Out;
-}
+	// Draw background
+	SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 255);
+	SDL_RenderClear(Renderer);
 
-Point Alchemist::GetCategoryButtonPosition(int Index) const
-{
-	Point Out
+	// Draw grid
+	SDL_SetRenderDrawColor(Renderer, 220, 220, 220, 255);
+
+	int x = -ViewTopLeft.X % GridSize;
+	int y = -ViewTopLeft.Y % GridSize;
+
+	for (; x < GetWindowSize().X; x += GridSize)
 	{
-		 GetWindowSize().X - SidebarWidth - GridSize,
-		 Index * GridSize
-	};
+		SDL_RenderDrawLine(Renderer, x, 0, x, GetWindowSize().Y);
+	}
 
-	return Out;
-}
-
-#if IS_WEB
-EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
-{
-	SDL_SetWindowSize(Window, UiEvent->windowInnerWidth, UiEvent->windowInnerHeight);
-	return EM_TRUE;
-}
-#endif
-
-Size Alchemist::GetWindowSize() const
-{
-	Size Out;
-
-	SDL_GetWindowSize(Window, &Out.X, &Out.Y);
-
-	return Out;
-}
-
-Size Alchemist::GetOptionsMenuPosition(const shared_ptr<Node>& NodeOnGrid) const
-{
-	return Size{ GridToScreen(NodeBeingConnectedTo->GetGridPosition() + Point(1, 1)).X + 2, GridToScreen(NodeBeingConnectedTo->GetGridPosition() + Point(1, 1)).Y + 2 };
-}
-
-Size Alchemist::GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid, const shared_ptr<Resource_Font>& FontResource) const
-{
-	Size SizeOut;
-
-	for (int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
+	for (; y < GetWindowSize().Y; y += GridSize)
 	{
-		string Argument = NodeOnGrid->GetArgumentName(i);
+		SDL_RenderDrawLine(Renderer, 0, y, GetWindowSize().X, y);
+	}
 
-		Size StringSize = FontResource->GetStringScreenSize(Argument);
+	// If 0, 0 is on screen, draw it
+	SDL_SetRenderDrawColor(Renderer, 150, 150, 150, 255);
 
-		if (StringSize.X > SizeOut.X)
+	SDL_RenderDrawLine(Renderer, ViewTopLeft.X, -ViewTopLeft.Y, GetWindowSize().X, -ViewTopLeft.Y);
+	SDL_RenderDrawLine(Renderer, -ViewTopLeft.X, ViewTopLeft.Y, -ViewTopLeft.X, GetWindowSize().Y);
+	
+	// Draw nodes
+	for (shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodes())
+	{
+		Point Position = NodeOnGrid->GetGridPosition();
+
+		// Grid position to screen position
+		Point ScreenPosition = GridToScreen(Position);
+
+		SDL_Rect GridRect = {
+			ScreenPosition.X,
+			ScreenPosition.Y,
+			GridSize,
+			GridSize
+		};
+
+		if (NodeOnGrid == NodeLastSelected.lock())
 		{
-			SizeOut.X = StringSize.X;
+			// Draw selection rectangle.
+			SDL_SetRenderDrawColor(Renderer, 200, 200, 200, 255);
+			SDL_RenderFillRect(Renderer, &GridRect);
 		}
 
-		if (StringSize.Y > SizeOut.Y)
+		// Draw
+		NodeOnGrid->Draw(this, ScreenPosition, NodeOnGrid == NodeOnMouse);
+	}
+
+	// Draw node connections
+	for (shared_ptr<Node> NodeOnGrid : CurrentFunction->GetNodes())
+	{
+		for (int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
 		{
-			SizeOut.Y = StringSize.Y;
+			if (shared_ptr<Node> Connector = NodeOnGrid->GetConnector(i))
+			{
+				SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+				DrawConnectorArrowOnGrid(Connector->GetGridPosition(), NodeOnGrid->GetGridPosition());
+			}
 		}
 	}
 
-	return SizeOut;
+	// Draw node being dragged
+	if (NodeOnMouse)
+	{
+		// Show a transparent preview of the node being dragged;
+		// Hilight the grid space hovered in blue if empty, or red if occupied.
+		// If the hovered grid space is empty, lock the node to it, otherwise move it exactly to the position of the mouse.
+		Point DrawPos = MousePos;
+
+		if (MousePos.X < GetWindowSize().X - SidebarWidth)
+		{
+			Point MouseGridPosition = ScreenToGrid(MousePos);
+			Point GridPos = GridToScreen(MouseGridPosition);
+			shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+			if (!NodeUnderMouse || NodeUnderMouse == NodeOnMouse)
+			{
+				DrawPos = GridPos;
+				SDL_SetRenderDrawColor(Renderer, 100, 100, 255, 100);
+			}
+			else
+			{
+				SDL_SetRenderDrawColor(Renderer, 255, 100, 100, 100);
+			}
+
+			SDL_Rect Rect{ GridPos.X, GridPos.Y, GridSize, GridSize };
+
+			SDL_RenderFillRect(Renderer, &Rect);
+		}
+		else
+		{
+			// TODO somehow show that releasing the node here will delete it?
+		}
+
+		NodeOnMouse->Draw(this, DrawPos, true);
+	}
+	else
+	{
+		// Draw node captions of any node under the mouse
+		Point MouseGridPosition = ScreenToGrid(MousePos);
+		shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+		if (NodeUnderMouse && MousePos.X < GetWindowSize().X - SidebarWidth)
+		{
+			DrawTooltip(NodeUnderMouse);
+		}
+	}
+
+	// Draw connector being dragged
+	if (NodeBeingConnected)
+	{
+		if (!NodeBeingConnectedTo) // de-facto "dragging" state
+		{
+			Point MouseGridPosition = ScreenToGrid(MousePos);
+			shared_ptr<Node> NodeUnderMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 150);
+
+			if (NodeUnderMouse)
+			{
+				if (NodeUnderMouse->GetNumArguments())
+				{
+					SDL_SetRenderDrawColor(Renderer, 0, 0, 255, 150);
+				}
+				else
+				{
+					SDL_SetRenderDrawColor(Renderer, 255, 0, 0, 150);
+				}
+			}
+
+			DrawConnectorArrowOnGrid(NodeBeingConnected->GetGridPosition(), MouseGridPosition);
+		}
+		else // de-facto "connecting" state
+		{
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 255, 255);
+			DrawConnectorArrowOnGrid(NodeBeingConnected->GetGridPosition(), NodeBeingConnectedTo->GetGridPosition());
+
+			Point OptionPosition = GetOptionsMenuPosition(NodeBeingConnected);
+			Size OptionSize = GetOptionsMenuOptionSize(NodeBeingConnectedTo);
+
+			SDL_Rect OptionsRect = {
+				OptionPosition.X,
+				OptionPosition.Y,
+				OptionSize.X,
+				OptionSize.Y
+		};
+
+			// Turn per-option size into full menu size.
+			OptionsRect.h *= NodeBeingConnectedTo->GetNumArguments();
+
+			// Add padding
+			OptionsRect.w += ConnectMenuOptionPadding;
+			OptionsRect.h += ConnectMenuOptionPadding;
+
+			// Draw pop-out variable list
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 200);
+			SDL_RenderFillRect(Renderer, &OptionsRect);
+
+			// Draw outline (x2)
+			SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+			DrawThickRectangle(this, OptionsRect, 2);
+
+			for (int i = 0; i < NodeBeingConnectedTo->GetNumArguments(); i++)
+			{
+				// For rendering string
+				string Argument = NodeBeingConnectedTo->GetArgumentName(i);
+
+				Size StringSize = Font->GetStringScreenSize(Argument);
+
+				SDL_Rect Rect = {
+					OptionsRect.x + (ConnectMenuOptionPadding / 2),
+					OptionsRect.y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
+					StringSize.X,
+					StringSize.Y
+				};
+
+				// For rendering highlight
+				SDL_Rect HighlightRect = {
+					OptionsRect.x,
+					OptionsRect.y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
+					OptionsRect.w,
+					OptionSize.Y
+				};
+
+				// Render highlight first, IF the mouse is within its area.
+				if (MousePos.IsInRectangle(HighlightRect))
+				{
+					SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 100);
+					SDL_RenderFillRect(Renderer, &HighlightRect);
+			}
+
+				// Then string
+				SDL_RenderCopy(Renderer, Font->GetStringTexture(Argument), NULL, &Rect);
+			}
+		}
+	}
 }
 
-Size Alchemist::GetWindowStartSize() const
+bool Alchemist::ToolbarHandleEvent(SDL_Event& Event)
 {
-#if IS_WEB
-	return { GetWindowWidthJS(), GetWindowHeightJS() };
-#else
-	return { 1600, 900 };
-#endif
+	return false;
 }
 
-void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2)
+bool Alchemist::PaletteHandleEvent(SDL_Event& Event)
+{
+	switch (Event.type)
+	{
+		case SDL_MOUSEBUTTONDOWN:
+		{
+			if (Event.motion.x > GetWindowSize().X - SidebarWidth - GridSize)
+			{
+				// Pick up the palette selection.
+				vector<Category> CategorisedNodes = Nodes.GetCategorisedNodes(); // todo: constantly calling this is terrible!
+				const Category& CurrentCategory = CategorisedNodes[PaletteCategory];
+
+				int PaletteSelection = GetPaletteSelection(CurrentCategory);
+
+				if (PaletteSelection != -1)
+				{
+					NodeOnMouse = CurrentCategory.Nodes[PaletteSelection]->Clone();
+				}
+				else
+				{
+					// If there is no palette selection, look for the mouse being over a category button
+					if (Event.motion.x < GetWindowSize().X - SidebarWidth && Event.motion.x > GetWindowSize().X - SidebarWidth - GridSize)
+					{
+						int Category = (Event.motion.y - ToolbarHeight - (ToolbarPadding * 2)) / GridSize;
+
+						if (Category < CategorisedNodes.size())
+						{
+							PaletteCategory = Category;
+						}
+					}
+				}
+
+				return true; // always stop the event here
+			}
+
+			break;
+		}
+		case SDL_MOUSEBUTTONUP:
+		{
+			if (Event.button.button == 0 && Event.motion.x > GetWindowSize().X - SidebarWidth - GridSize)
+			{
+				if (NodeOnMouse)
+				{
+					CurrentFunction->RemoveNode(NodeOnMouse);
+					NodeOnMouse.reset();
+				}
+
+				return true;
+			}
+			
+			break;
+		}
+	}
+	
+	return false;
+}
+
+bool Alchemist::GridHandleEvent(SDL_Event& Event)
+{
+	switch(Event.type)
+	{
+		case SDL_MOUSEBUTTONDOWN:
+		{
+			Point EventMousePosition(Event.motion.x, Event.motion.y);
+
+			Point MouseGridPosition = ScreenToGrid(EventMousePosition);
+
+			if (Event.button.button == 2)
+			{
+				ViewDrag = true;
+
+				return true;
+			}
+			else if (Event.button.button == 1)
+			{
+				if (NodeBeingConnected)
+				{
+					if (NodeBeingConnectedTo)
+					{
+						// An options menu is open near this node.
+						// Find if we just clicked any option.
+						// The position of the menu options is fairly easy to work out.
+						Point OptionPosition = GetOptionsMenuPosition(NodeBeingConnectedTo);
+						Size OptionSize = GetOptionsMenuOptionSize(NodeBeingConnectedTo);
+
+						for (int i = 0; i < NodeBeingConnectedTo->GetNumArguments(); i++)
+						{
+							SDL_Rect OptionRect = {
+								OptionPosition.X,
+								OptionPosition.Y + (ConnectMenuOptionPadding / 2) + (OptionSize.Y * i),
+								OptionSize.X,
+								OptionSize.Y
+							};
+
+							if (EventMousePosition.IsInRectangle(OptionRect))
+							{
+								// Make a connection between arg i and the node, being connected, then break.
+								NodeBeingConnectedTo->SetConnector(NodeBeingConnected, i);
+								break;
+							}
+						}
+					}
+
+					// Kill any pending connection.
+					NodeBeingConnected.reset();
+					NodeBeingConnectedTo.reset();
+				}
+
+				NodeLastSelected.reset();
+
+				// Look for a node under the mouse.
+				// If there is one, begin dragging or copy it.
+				NodeOnMouse = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+				if (NodeOnMouse && Copy)
+				{
+					NodeOnMouse = NodeOnMouse->Clone();
+				}
+
+				return true;
+			}
+			else if (Event.button.button == 3 && !NodeOnMouse)
+			{
+				NodeBeingConnectedTo.reset();
+
+				// Look for a node under the mouse.
+				// If there is one, start creating a connector from this node.
+				NodeBeingConnected = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+				return true;
+			}
+
+			break;
+		}
+		case SDL_MOUSEBUTTONUP:
+		{
+			if (Event.button.button == 2)
+			{
+				ViewDrag = false;
+				return true;
+			}
+			else if (Event.button.button == 1)
+			{
+				// If there is a node on the mouse, and the grid space below the mouse is clear, insert the node there.
+				if (NodeOnMouse)
+				{
+					NodeLastSelected = NodeOnMouse;
+
+					Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
+					CurrentFunction->PlaceNode(NodeOnMouse, MouseGridPosition);
+
+					NodeOnMouse.reset();
+
+					return true;
+				}
+			}
+			else if (Event.button.button == 3)
+			{
+				// If there is a connector being dragged, connect it to the node it was dropped on. Always stop dragging at this point
+				if (NodeBeingConnected)
+				{
+					// If we dropped on another node, bring up the second stage connecting menu!
+					Point MouseGridPosition = ScreenToGrid(Point(Event.motion.x, Event.motion.y));
+					NodeBeingConnectedTo = CurrentFunction->GetNodeAt(MouseGridPosition);
+
+					if (!NodeBeingConnectedTo || NodeBeingConnectedTo == NodeBeingConnected || NodeBeingConnectedTo->GetNumArguments() == 0)
+					{
+						NodeBeingConnected.reset();
+						NodeBeingConnectedTo.reset();
+					}
+				}
+
+				return true;
+			}
+
+			break;
+		}
+		case SDL_MOUSEMOTION:
+		{
+			MousePos.X = Event.motion.x;
+			MousePos.Y = Event.motion.y;
+
+			if (ViewDrag)
+			{
+				ViewTopLeft.X -= Event.motion.xrel;
+				ViewTopLeft.Y -= Event.motion.yrel;
+			}
+
+			return true;
+		}
+		case SDL_KEYDOWN:
+		{
+			if (Event.key.keysym.sym == SDLK_F5)
+			{
+				Compile();
+			}
+			else if (Event.key.keysym.sym == SDLK_LCTRL)
+			{
+				Copy = true;
+			}
+			else if (Event.key.keysym.sym == SDLK_DELETE)
+			{
+				shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
+
+				if (LastSelectedLock)
+				{
+					CurrentFunction->RemoveNode(LastSelectedLock);
+				}
+			}
+			else
+			{
+				shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
+
+				if (LastSelectedLock)
+				{
+					LastSelectedLock->HandleKeyPress(Event);
+				}
+			}
+
+			return true;
+		}
+		case SDL_KEYUP:
+		{
+			if (Event.key.keysym.sym == SDLK_LCTRL)
+			{
+				Copy = false;
+			}
+
+			return true;
+		}
+		case SDL_TEXTINPUT:
+		{
+			shared_ptr<Node> LastSelectedLock = NodeLastSelected.lock();
+
+			if (LastSelectedLock)
+			{
+				LastSelectedLock->HandleTextInput(Event);
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+int Alchemist::GetPaletteSelection(const Category& CurrentCategory) const
+{
+	int PaletteSelection = -1;
+
+	for (int i = 0; i < CurrentCategory.Nodes.size(); i++)
+	{
+		Point NodePos = GetPaletteItemPosition(i);
+		if (MousePos.X > NodePos.X && MousePos.Y > NodePos.Y && MousePos.X <= NodePos.X + GridSize && MousePos.Y <= NodePos.Y + GridSize)
+		{
+			PaletteSelection = i;
+		}
+	}
+
+	return PaletteSelection;
+}
+
+void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2) const
 {
 	Point ScreenPoint1 = GridToScreen(Point1) + (GridSize / 2);
 	Point ScreenPoint2 = GridToScreen(Point2) + (GridSize / 2);
@@ -794,9 +900,9 @@ void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point
 	DrawConnectorArrow(this, ScreenPoint1, ScreenPoint2);
 }
 
-void Alchemist::DrawTooltip(const shared_ptr<Node>& Node)
+void Alchemist::DrawTooltip(const shared_ptr<Node>& Node) const
 {
-	shared_ptr<Resource_Font> Font = Resources.GetResource<Resource_Font>("Font.ttf");
+	shared_ptr<Resource_Font> Font = GetDefaultFont();
 	
 	string NodeDetailText = Node->GetDisplayName();
 
@@ -817,4 +923,102 @@ void Alchemist::DrawTooltip(const shared_ptr<Node>& Node)
 
 	SDL_SetTextureColorMod(DisplayTexture, 0, 0, 0);
 	SDL_RenderCopy(Renderer, DisplayTexture, NULL, &DisplayRect);
+}
+
+shared_ptr<Resource_Font> Alchemist::GetDefaultFont() const
+{
+	return Resources.GetResource<Resource_Font>("Font.ttf");
+}
+
+vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
+{
+	vector<ToolbarOptionData> Out;
+	
+	// First option is the "[name of the function]:[arity]", example: main:0
+	// Contains these options AS LONG AS the function name is NOT "main":
+	// - Change signature
+	// - Delete
+	{
+		if (CurrentFunction->GetName() != "main")
+		{
+			ToolbarOptionData Options = {
+				CurrentFunction->GetName() + ":" + to_string(CurrentFunction->GetArity()),
+				{ "Change Signature...", "Delete" },
+				{
+					[&]()
+					{
+						//ChangeSignature();
+					},
+					[&]()
+					{
+						//DeleteFunction();
+					}
+				}
+			};
+
+			Out.push_back(Options);
+		}
+		else
+		{
+			ToolbarOptionData Options = {
+				CurrentFunction->GetName() + ":" + to_string(CurrentFunction->GetArity()),
+				{ "You cannot edit or delete the \"main\" function." },
+				{ nullptr }
+			};
+
+			Out.push_back(Options);
+		}
+	}
+
+	// Second option is "Program"
+	// Contains:
+	// - New function
+	// - Generate code
+	{
+		ToolbarOptionData Options = {
+			"Program",
+			{ "New Function", "Generate Code" },
+			{
+				[&]()
+				{
+					//NewFunction();
+				},
+				[&]()
+				{
+					//Compile();
+				}
+			}
+		};
+
+		Out.push_back(Options);
+	}
+
+	// Third option is "About"
+	// - Non-clickable version number
+	// - Copyright Chris Sixsmith 2020.
+	{
+		ToolbarOptionData Options = {
+			"About",
+			{ "Version 1", "Copyright Chris Sixsmith 2020." },
+			{ nullptr, nullptr }
+		};
+
+		Out.push_back(Options);
+	}
+	
+	return Out;
+}
+
+int Alchemist::GetToolbarOptionX(int OptionId) const
+{
+	int X = ToolbarPadding + 48;
+	auto Options = GetToolbarOptions();
+	shared_ptr<Resource_Font> Font = GetDefaultFont();
+	
+	for(int i = 0; i < OptionId && i < Options.size(); i++)
+	{
+		X += Font->GetStringScreenSize(Options[i].Option).X + (ToolbarPadding * 6);
+	}
+	
+	return X;
 }

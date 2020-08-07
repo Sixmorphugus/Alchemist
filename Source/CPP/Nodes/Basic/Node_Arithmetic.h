@@ -123,7 +123,7 @@ public:
 		return "Operators";
 	}
 	
-	virtual void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const override
+	virtual void Draw(const Alchemist* Instance, const Point& Position, bool IsPreview = false) const override
 	{
 		Node::Draw(Instance, Position, IsPreview);
 

@@ -116,7 +116,7 @@ public:
 	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) = 0;
 	
 	/** Draws the node somewhere on-screen. */
-	virtual void Draw(Alchemist* Instance, const Point& Position, bool IsPreview = false) const;
+	virtual void Draw(const Alchemist* Instance, const Point& Position, bool IsPreview = false) const;
 
 	/** Handles unhandled key presses. */
 	virtual void HandleKeyPress(const SDL_Event& Event) {}

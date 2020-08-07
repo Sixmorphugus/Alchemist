@@ -47,10 +47,10 @@ void ResourceManager::LoadResources(Alchemist* Instance)
 	}
 }
 
-shared_ptr<Resource> ResourceManager::GetResource(string Name)
+shared_ptr<Resource> ResourceManager::GetResource(string Name) const
 {
 	assert(Resources.find(Name) != Resources.end());
-	return Resources[Name];
+	return Resources.find(Name)->second;
 }
 
 

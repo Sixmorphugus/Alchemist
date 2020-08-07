@@ -9,7 +9,7 @@ shared_ptr<Node> Node_Variable::Clone() const
 	return make_shared<Node_Variable>(*this);
 }
 
-void Node_Variable::Draw(Alchemist* Instance, const Point& Position, bool IsPreview) const
+void Node_Variable::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview) const
 {
 	Node::Draw(Instance, Position, IsPreview);
 

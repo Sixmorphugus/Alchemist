@@ -10,7 +10,7 @@ shared_ptr<Node> Node_Term_Int::Clone() const
 	return make_shared<Node_Term_Int>(*this);
 }
 
-void Node_Term_Int::Draw(Alchemist* Instance, const Point& Position, bool IsPreview) const
+void Node_Term_Int::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview) const
 {
 	shared_ptr<Resource_Image> NodeResource = Instance->GetResourceManager()->GetResource<Resource_Image>("Node.png");
 

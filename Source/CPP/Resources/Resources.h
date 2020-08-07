@@ -33,10 +33,10 @@ public:
 
 	void LoadResources(Alchemist* Instance);
 
-	shared_ptr<Resource> GetResource(string Name);
+	shared_ptr<Resource> GetResource(string Name) const;
 
 	template<class ResourceClass>
-	shared_ptr<ResourceClass> GetResource(string Name)
+	shared_ptr<ResourceClass> GetResource(string Name) const
 	{
 		shared_ptr<Resource> Resource = GetResource(Name);
 		return dynamic_pointer_cast<ResourceClass>(Resource);
