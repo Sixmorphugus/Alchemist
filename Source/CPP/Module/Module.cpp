@@ -3,6 +3,7 @@
 #include "Module.h"
 #include "Alchemist.h"
 #include "Function.h"
+#include "Nodes/Nodes.h"
 
 Module::Module(Alchemist* InstanceIn, string NameIn)
 	: Instance(InstanceIn), Name(NameIn)
@@ -20,6 +21,8 @@ shared_ptr<Function> Module::CreateOrGetFunction(string Name, int Arity)
 
 	Functions.push_back(NewFunction);
 	FunctionLookupTable[Name] = (int)Functions.size() - 1;
+
+	BroadcastOnModuleChanged();
 	
 	return NewFunction;
 }
@@ -71,6 +74,8 @@ void Module::RemoveFunction(string Name)
 			break;
 		}
 	}
+
+	BroadcastOnModuleChanged();
 }
 
 void Module::UpdateLookups()
@@ -83,3 +88,13 @@ void Module::UpdateLookups()
 	}
 }
 
+void Module::BroadcastOnModuleChanged()
+{
+	for (int i = 0; i < Functions.size(); i++)
+	{
+		for(const shared_ptr<Node>& Node : Functions[i]->GetNodes())
+		{
+			Node->OnModuleChanged();
+		}
+	}
+}

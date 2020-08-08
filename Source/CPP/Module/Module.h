@@ -39,6 +39,10 @@ public:
 	/** Rebuilds function lookup. */
 	void UpdateLookups();
 
+protected:
+	/** Handles module change. */
+	void BroadcastOnModuleChanged();
+
 private:
 	Alchemist* Instance;
 	vector<shared_ptr<Function>> Functions;

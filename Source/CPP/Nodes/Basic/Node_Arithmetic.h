@@ -158,10 +158,10 @@ public:
 			{
 				bLHS = true;
 			}
-			else
-			{
-				Problems.push_back(CompilationProblem{ shared_from_this(), "Invalid LHS expression." });
-			}
+		}
+		else
+		{
+			Problems.push_back(CompilationProblem{ shared_from_this(), "Missing LHS expression." });
 		}
 
 		Output += " " + OperatorTraits::SymbolChar + " ";
@@ -172,10 +172,10 @@ public:
 			{
 				bRHS = true;
 			}
-			else
-			{
-				Problems.push_back(CompilationProblem{ shared_from_this(), "Invalid RHS expression." });
-			}
+		}
+		else
+		{
+			Problems.push_back(CompilationProblem{ shared_from_this(), "Missing RHS expression." });
 		}
 
 		Output += ")";

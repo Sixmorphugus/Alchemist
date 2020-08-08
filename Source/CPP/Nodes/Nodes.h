@@ -70,7 +70,7 @@ public:
 
 public:
 	/** Returns this node's argument count. */
-	size_t GetNumArguments() const { return ArgumentData.size(); }
+	int GetNumArguments() const { return (int)ArgumentData.size(); }
 
 	/** Returns given argument's argument type. */
 	bool GetArgumentIsPattern(int Argument) const;
@@ -140,13 +140,18 @@ public:
 	Point GetGridPosition() const { return GridPosition; }
 
 protected:
-	/** Triggers when an instance of the node is placed in a function. */
+	/** Triggers when an instance of the node is placed in a function, or the function signature is changed. */
 	virtual void OnFunctionChanged() {}
+
+	/** Triggers when an instance of the node is present in a function while the makeup of the containing Module is changed. */
+	virtual void OnModuleChanged() {}
 	
 private:
-	int ID;
+	int ID = -1;
 	Function* NodeFunction;
 	Point GridPosition;
+
+	friend class Module;
 	
 	// TODO Erlang code emit
 };
@@ -171,7 +176,7 @@ struct Category
 class NodeManager
 {
 public:
-	NodeManager();
+	NodeManager(Alchemist* InstanceIn);
 
 	// Non copyable!
 	NodeManager(const NodeManager&);
@@ -213,6 +218,12 @@ public:
 	 */
 	vector<shared_ptr<Node>> GetAll(string Category) const;
 
+	/** Returns a vector of every static node. */
+	vector<shared_ptr<Node>> GetAllStatic() const;
+	
+	/** Returns a vector of every user node. */
+	vector<shared_ptr<Node>> GetAllUser() const;
+
 	/**
 	 * Returns all categories that exist.
 	 * Note that this is slow as it isn't using an acceleration structure yet.
@@ -220,6 +231,9 @@ public:
 	vector<Category> GetCategorisedNodes() const;
 	
 	// TODO user function registration.
+
+private:
+	Alchemist* Instance;
 };
 
 

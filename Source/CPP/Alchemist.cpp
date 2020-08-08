@@ -45,7 +45,7 @@ EM_BOOL UiEventCallback(int Type, const EmscriptenUiEvent* UiEvent, void* UserDa
 
 
 Alchemist::Alchemist()
-	: CurrentModule(this)
+	: CurrentModule(this), Nodes(this)
 {
 	// Initialize SDL
 	assert(SDL_Init(SDL_INIT_VIDEO) == 0);

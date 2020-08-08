@@ -4,6 +4,7 @@
 #include "DrawShapes.h"
 #include "Alchemist.h"
 #include "Resources/Resource_Image.h"
+#include "Special/Node_UserDefined.h"
 
 Node::Node()
 	: ID(-1)
@@ -108,9 +109,9 @@ vector<shared_ptr<Node>>& GetStaticNodes()
 /////////////////////////////////////////////////////////////////////
 
 
-NodeManager::NodeManager()
-{
-}
+NodeManager::NodeManager(Alchemist* InstanceIn)
+	: Instance(InstanceIn)
+{}
 
 shared_ptr<Node> NodeManager::CreateNode(int NodeID) const
 {
@@ -127,8 +128,7 @@ shared_ptr<Node> NodeManager::Get(int NodeID) const
 	}
 	else
 	{
-		// TODO return user-created function call node
-
+		return GetAllUser()[-NodeID];
 	}
 
 	return nullptr;
@@ -136,8 +136,12 @@ shared_ptr<Node> NodeManager::Get(int NodeID) const
 
 vector<shared_ptr<Node>> NodeManager::GetAll() const
 {
-	// TODO account for user-created
-	return GetStaticNodes();
+	vector<shared_ptr<Node>> Nodes = GetAllStatic();
+	vector<shared_ptr<Node>> UserNodes = GetAllUser();
+
+	Nodes.insert(Nodes.end(), UserNodes.begin(), UserNodes.end());
+	
+	return Nodes;
 }
 
 vector<shared_ptr<Node>> NodeManager::GetAll(string Category) const
@@ -152,6 +156,27 @@ vector<shared_ptr<Node>> NodeManager::GetAll(string Category) const
 		{
 			Out.push_back(NodeInstance);
 		}
+	}
+
+	return Out;
+}
+
+vector<shared_ptr<Node>> NodeManager::GetAllStatic() const
+{
+	return GetStaticNodes();
+}
+
+vector<shared_ptr<Node>> NodeManager::GetAllUser() const
+{
+	vector<shared_ptr<Node>> Out;
+	auto Functions = Instance->GetCurrentModule()->GetFunctions();
+	
+	for(int i = 0; i < Functions.size(); i++)
+	{
+		shared_ptr<Node> UserNode = make_shared<Node_UserDefined>(Functions[i]);
+		UserNode->ID = -i;
+		
+		Out.push_back(UserNode);
 	}
 
 	return Out;
@@ -182,7 +207,7 @@ vector<Category> NodeManager::GetCategorisedNodes() const
 			// Add a new category.
 			Out.push_back(Category{ CategoryName, {} });
 
-			FoundCategoryId = Out.size() - 1;
+			FoundCategoryId = (int)Out.size() - 1;
 
 			CategoryLookup[CategoryName] = FoundCategoryId;			
 		}
