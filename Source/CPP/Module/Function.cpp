@@ -54,7 +54,7 @@ bool Function::PlaceNode(shared_ptr<Node> NewNode, const Point& Position)
 	if (NewNode->NodeFunction != this)
 	{
 		NewNode->NodeFunction = this;
-		NewNode->OnPlaced();
+		NewNode->OnFunctionChanged();
 	}
 
 	NewNode->GridPosition = Position;
@@ -111,6 +111,16 @@ int Function::GetNodeId(const shared_ptr<Node>& NodeInstance) const
 	return -1;
 }
 
+void Function::SetArity(int NewArity)
+{
+	Arity = NewArity;
+
+	for(const shared_ptr<Node> Node : NodesOnGrid)
+	{
+		Node->OnFunctionChanged();
+	}
+}
+
 bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
 {
 	// First we need to find our list of root nodes.
@@ -150,6 +160,12 @@ bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
 	
 	// Success?
 	return Pass;
+}
+
+void Function::Rename(const string& NewName)
+{
+	Name = NewName;
+	Instance->GetCurrentModule()->UpdateLookups();
 }
 
 void Function::FixLookups()

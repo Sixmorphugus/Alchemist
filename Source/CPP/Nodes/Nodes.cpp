@@ -66,6 +66,12 @@ void Node::RegisterArgument(const string& ArgumentName, bool IsPattern)
 	ArgumentData.push_back(NodeArgumentData{ ArgumentName, IsPattern, weak_ptr<Node>() });
 }
 
+void Node::ClearArguments()
+{
+	ArgumentData.clear();
+	ArgumentLookupTable.clear();
+}
+
 void Node::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview) const
 {
 	shared_ptr<Resource_Image> RingResource = Instance->GetResourceManager()->GetResource<Resource_Image>("NodeRing.png");

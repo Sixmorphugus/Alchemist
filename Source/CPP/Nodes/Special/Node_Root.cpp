@@ -8,11 +8,7 @@
 
 Node_Root::Node_Root()
 {
-	// Register return argument.
-	RegisterArgument("ReturnValue");
-
-	// Register guard
-	RegisterArgument("Guard");
+	
 }
 
 shared_ptr<Node> Node_Root::Clone() const
@@ -65,9 +61,11 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 			Problems.push_back(CompilationProblem{ shared_from_this(), "Argument " + to_string(i) + " was not defined." });
 			Success = false;
 		}
-
-		// Emit it
-		ArgPatternArg->Emit(Output, Problems);
+		else
+		{
+			// Emit it
+			ArgPatternArg->Emit(Output, Problems);
+		}
 
 		// Comma if required
 		if(i + 1 < GetFunction()->GetArity())
@@ -106,8 +104,16 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 	return Success;
 }
 
-void Node_Root::OnPlaced()
+void Node_Root::OnFunctionChanged()
 {
+	ClearArguments();
+	
+	// Register return argument.
+	RegisterArgument("ReturnValue");
+
+	// Register guard
+	RegisterArgument("Guard");
+	
 	// Create pattern arguments according to function arity.
 	for (int i = 0; i < GetFunction()->GetArity(); i++)
 	{

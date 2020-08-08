@@ -63,7 +63,7 @@ Alchemist::Alchemist()
 	WindowSurface = SDL_GetWindowSurface(Window);
 
 	// Create a node
-	CurrentFunction = CurrentModule.CreateOrGetFunction("main", 0);
+	CurrentFunction = CurrentModule.CreateOrGetFunction("Main", 0);
 }
 
 Alchemist::~Alchemist()
@@ -96,7 +96,20 @@ void Alchemist::Compile()
 
 	cout << endl << "COMPILING" << endl;
 
-	if (CurrentFunction->Emit(OutCode, OutProblems))
+	bool Ok = true;
+	auto Functions = CurrentModule.GetFunctions();
+	
+	for(int i = 0; i < Functions.size(); i++)
+	{
+		if(!Functions[i]->Emit(OutCode, OutProblems))
+		{
+			Ok = false;
+		}
+
+		OutCode += "\n";
+	}
+	
+	if (Ok)
 	{
 		// Print the code
 		cout << OutCode << endl;
@@ -113,7 +126,8 @@ void Alchemist::Compile()
 
 		for (int i = 0; i < OutProblems.size(); i++)
 		{
-			cout << "- " << OutProblems[i].Problem << endl;
+			Function* ProblemFunction = OutProblems[i].ProblemNode->GetFunction();
+			cout << "- (In " << (ProblemFunction->GetName() + ":" + to_string(ProblemFunction->GetArity())) << ") " << OutProblems[i].Problem << endl;
 		}
 	}
 	else
@@ -267,6 +281,23 @@ Size Alchemist::GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid) con
 	}
 
 	return SizeOut;
+}
+
+void Alchemist::ViewFunction(string Name)
+{
+	EditingFunctionSignature = false;
+	
+	shared_ptr<Function> Func = CurrentModule.GetFunction(Name);
+
+	if(Func)
+	{
+		CurrentFunction = Func;
+	}
+}
+
+void Alchemist::EditFunctionSignature()
+{
+	EditingFunctionSignature = true;
 }
 
 Size Alchemist::GetWindowStartSize() const
@@ -666,6 +697,25 @@ void Alchemist::DrawGrid() const
 			}
 		}
 	}
+
+	// If editing function, show edit text
+	if(EditingFunctionSignature)
+	{
+		string Text = CurrentFunction->GetName() + "_ : " + to_string(CurrentFunction->GetArity());
+
+		Point Position = Point(ToolbarPadding, ToolbarHeight + (ToolbarPadding * 2));
+		Size Siz = Font->GetStringScreenSize(Text);
+
+		SDL_Rect Rect = {
+			Position.X,
+			Position.Y,
+			Siz.X,
+			Siz.Y
+		};
+
+		SDL_SetTextureColorMod(Font->GetStringTexture(Text), 0, 0, 0);
+		SDL_RenderCopy(Renderer, Font->GetStringTexture(Text), NULL, &Rect);
+	}
 }
 
 bool Alchemist::ToolbarHandleEvent(SDL_Event& Event)
@@ -687,8 +737,11 @@ bool Alchemist::ToolbarHandleEvent(SDL_Event& Event)
 
 					if(MousePos.IsInRectangle(OptionRect))
 					{
-						ToolbarOpenMenu = i;
-						ClickedRootButton = true;
+						if(ToolbarOpenMenu != i)
+						{
+							ToolbarOpenMenu = i;
+							ClickedRootButton = true;
+						}
 					}
 				}
 
@@ -705,7 +758,7 @@ bool Alchemist::ToolbarHandleEvent(SDL_Event& Event)
 							// Call its on click function.
 							if(Options[ToolbarOpenMenu].SelectFunctions[i])
 							{
-								Options[ToolbarOpenMenu].SelectFunctions[i]();
+								Options[ToolbarOpenMenu].SelectFunctions[i](this);
 							}
 						}
 					}
@@ -724,6 +777,44 @@ bool Alchemist::ToolbarHandleEvent(SDL_Event& Event)
 				return true;
 			}
 		}
+		case SDL_TEXTINPUT:
+		{
+			if (EditingFunctionSignature)
+			{
+				CurrentFunction->Rename(CurrentFunction->GetName() + Event.text.text);
+			}
+
+			break;
+		}
+		case SDL_KEYDOWN:
+		{
+			if (EditingFunctionSignature)
+			{
+				if (Event.key.keysym.sym == SDLK_BACKSPACE)
+				{
+					CurrentFunction->Rename(CurrentFunction->GetName().substr(0, CurrentFunction->GetName().size() - 1));
+				}
+				else if (Event.key.keysym.sym == SDLK_UP)
+				{
+					CurrentFunction->SetArity(CurrentFunction->GetArity() + 1);
+				}
+				else if (Event.key.keysym.sym == SDLK_DOWN)
+				{
+					CurrentFunction->SetArity(CurrentFunction->GetArity() > 0 ? CurrentFunction->GetArity() - 1 : 0);
+				}
+				else if (Event.key.keysym.sym == SDLK_RETURN)
+				{
+					EditingFunctionSignature = false;
+				}
+			}
+
+			break;
+		}
+	}
+
+	if (EditingFunctionSignature)
+	{
+		return true;
 	}
 	
 	return false;
@@ -1042,25 +1133,26 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 	vector<ToolbarOptionData> Out;
 	
 	// First option is the "[name of the function]:[arity]", example: main:0
-	// Contains these options AS LONG AS the function name is NOT "main":
+	// Contains these options AS LONG AS the function name is NOT "Main":
 	// - Change signature
 	// - Delete
 	{
 		string FuncString = "Function (" + CurrentFunction->GetName() + ":" + to_string(CurrentFunction->GetArity()) + ")...";
 		
-		if (CurrentFunction->GetName() != "main")
+		if (CurrentFunction->GetName() != "Main")
 		{
 			ToolbarOptionData Options = {
 				FuncString,
 				{ "Change Signature...", "Delete" },
 				{
-					[&]()
+					[](Alchemist* Instance)
 					{
-						//ChangeSignature();
+						Instance->EditFunctionSignature();
 					},
-					[&]()
+					[](Alchemist* Instance)
 					{
-						//DeleteFunction();
+						Instance->GetCurrentModule()->RemoveFunction(Instance->GetCurrentFunction()->GetName());
+						Instance->ViewFunction("Main");
 					}
 				}
 			};
@@ -1071,7 +1163,7 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 		{
 			ToolbarOptionData Options = {
 				FuncString,
-				{ "You cannot edit or delete the \"main\" function." },
+				{ "You cannot add arguments to or delete the \"main\" function." },
 				{ nullptr }
 			};
 
@@ -1088,13 +1180,14 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 			"Program...",
 			{ "New Function", "Generate Code" },
 			{
-				[&]()
+				[](Alchemist* Instance)
 				{
-					//NewFunction();
+					shared_ptr<Function> Func = Instance->GetCurrentModule()->CreateUniqueFunction();
+					Instance->ViewFunction(Func->GetName());
 				},
-				[&]()
+				[](Alchemist* Instance)
 				{
-					//Compile();
+					Instance->Compile();
 				}
 			}
 		};
@@ -1102,7 +1195,32 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 		Out.push_back(Options);
 	}
 
-	// Third option is "About"
+	// Third option is "View"
+	// Contains every function signature in the program.
+	{
+		ToolbarOptionData Options = {
+			"View...",
+			{},
+			{}
+		};
+
+		auto Functions = CurrentModule.GetFunctions();
+		
+		for(int i = 0; i < Functions.size(); i++)
+		{
+			string FuncName = Functions[i]->GetName(); // needed due to quirks with capturing
+			
+			Options.SubOptions.push_back(Functions[i]->GetName() + ":" + to_string(Functions[i]->GetArity()));
+			Options.SelectFunctions.push_back([FuncName](Alchemist* Instance)
+			{
+				Instance->ViewFunction(FuncName);
+			});
+		}
+
+		Out.push_back(Options);
+	}
+	
+	// Forth option is "About"
 	// - Non-clickable version number
 	// - Copyright Chris Sixsmith 2020.
 	{

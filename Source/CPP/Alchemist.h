@@ -22,7 +22,7 @@ struct ToolbarOptionData
 {
 	string Option;
 	vector<string> SubOptions;
-	vector<function<void()>> SelectFunctions;
+	vector<function<void(Alchemist* Instance)>> SelectFunctions;
 };
 
 class Function;
@@ -100,6 +100,12 @@ public:
 	/** Returns size of options in the options menu rect spawned from given node. */
 	Size GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid) const;
 
+	/** Views a function */
+	void ViewFunction(string Name);
+
+	/** Edits function signature. */
+	void EditFunctionSignature();
+
 private:	
 	/** Gets window start size. */
 	Size GetWindowStartSize() const;
@@ -175,6 +181,8 @@ private:
 	shared_ptr<Function> CurrentFunction;
 
 	int ToolbarOpenMenu = -1;
+
+	bool EditingFunctionSignature = false;
 
 	vector<CompilationProblem> ProblemsFromLastCompile;
 };

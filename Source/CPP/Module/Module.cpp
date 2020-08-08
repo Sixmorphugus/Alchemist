@@ -24,6 +24,19 @@ shared_ptr<Function> Module::CreateOrGetFunction(string Name, int Arity)
 	return NewFunction;
 }
 
+shared_ptr<Function> Module::CreateUniqueFunction()
+{
+	string Name = "Func";
+
+	int i = 0;
+	while(GetFunction(Name))
+	{
+		Name = "Func" + to_string(i++);
+	}
+
+	return CreateOrGetFunction(Name, 0);
+}
+
 const shared_ptr<Function> Module::GetFunction(string Name) const
 {
 	auto Found = FunctionLookupTable.find(Name);
@@ -48,6 +61,25 @@ shared_ptr<Function> Module::GetFunction(string Name)
 
 void Module::RemoveFunction(string Name)
 {
-	// TODO
+	FunctionLookupTable.erase(Name);
+
+	for (int i = 0; i < Functions.size(); i++)
+	{
+		if(Functions[i]->Name == Name)
+		{
+			Functions.erase(Functions.begin() + i);
+			break;
+		}
+	}
+}
+
+void Module::UpdateLookups()
+{
+	FunctionLookupTable.clear();
+
+	for(int i = 0; i < Functions.size(); i++)
+	{
+		FunctionLookupTable[Functions[i]->GetName()] = i;
+	}
 }
 

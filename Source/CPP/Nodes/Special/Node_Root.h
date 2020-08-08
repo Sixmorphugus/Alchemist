@@ -26,6 +26,6 @@ public:
 
 protected:
 	// Node interface.
-	virtual void OnPlaced() override;
+	virtual void OnFunctionChanged() override;
 	// End of Node interface.
 };

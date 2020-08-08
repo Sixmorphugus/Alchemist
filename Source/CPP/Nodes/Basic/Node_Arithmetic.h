@@ -158,6 +158,10 @@ public:
 			{
 				bLHS = true;
 			}
+			else
+			{
+				Problems.push_back("Invalid LHS expression.");
+			}
 		}
 
 		Output += " " + OperatorTraits::SymbolChar + " ";
@@ -167,6 +171,10 @@ public:
 			if (RHS->Emit(Output, Problems))
 			{
 				bRHS = true;
+			}
+			else
+			{
+				Problems.push_back("Invalid RHS expression.");
 			}
 		}
 

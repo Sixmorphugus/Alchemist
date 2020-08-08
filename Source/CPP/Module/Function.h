@@ -79,6 +79,9 @@ public:
 	/** Returns function's arity (argument count). */
 	int GetArity() const { return Arity; }
 
+	/** Sets function's arity (argument count). */
+	void SetArity(int NewArity);
+
 	/** Returns function's name. */
 	string GetName() const { return Name; }
 
@@ -87,6 +90,9 @@ public:
 
 	/** Emits Erlang code for the function. */
 	bool Emit(string& Output, vector<CompilationProblem>& Problems) const;
+
+	/** Renames the function. */
+	void Rename(const string& NewName);
 	
 private:
 	/** Recreates all values in the lookup table. */
