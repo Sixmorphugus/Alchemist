@@ -164,6 +164,11 @@ bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
 
 void Function::Rename(const string& NewName)
 {
+	if(GetInstance()->GetCurrentModule()->GetFunction(NewName))
+	{
+		return;
+	}
+	
 	Name = NewName;
 	Instance->GetCurrentModule()->UpdateLookups();
 }

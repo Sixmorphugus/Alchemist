@@ -160,7 +160,7 @@ public:
 			}
 			else
 			{
-				Problems.push_back("Invalid LHS expression.");
+				Problems.push_back(CompilationProblem{ shared_from_this(), "Invalid LHS expression." });
 			}
 		}
 
@@ -174,7 +174,7 @@ public:
 			}
 			else
 			{
-				Problems.push_back("Invalid RHS expression.");
+				Problems.push_back(CompilationProblem{ shared_from_this(), "Invalid RHS expression." });
 			}
 		}
 

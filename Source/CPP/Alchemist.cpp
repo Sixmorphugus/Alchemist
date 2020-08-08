@@ -702,7 +702,9 @@ void Alchemist::DrawGrid() const
 	if(EditingFunctionSignature)
 	{
 		string Text = CurrentFunction->GetName() + "_ : " + to_string(CurrentFunction->GetArity());
+		string HintText = "[ENTER] Confirm[UP / DOWN] Change Arity";
 
+		// Text
 		Point Position = Point(ToolbarPadding, ToolbarHeight + (ToolbarPadding * 2));
 		Size Siz = Font->GetStringScreenSize(Text);
 
@@ -715,6 +717,19 @@ void Alchemist::DrawGrid() const
 
 		SDL_SetTextureColorMod(Font->GetStringTexture(Text), 0, 0, 0);
 		SDL_RenderCopy(Renderer, Font->GetStringTexture(Text), NULL, &Rect);
+
+		// HintText
+		Siz = Font->GetStringScreenSize(HintText);
+
+		Rect = {
+			Position.X,
+			Position.Y + 40,
+			Siz.X,
+			Siz.Y
+		};
+
+		SDL_SetTextureColorMod(Font->GetStringTexture(HintText), 0, 0, 0);
+		SDL_RenderCopy(Renderer, Font->GetStringTexture(HintText), NULL, &Rect);
 	}
 }
 
