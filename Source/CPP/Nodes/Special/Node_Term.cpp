@@ -16,8 +16,10 @@ void Node_Term_Int::Draw(const Alchemist* Instance, const Point& Position, bool 
 
 	assert(NodeResource);
 
+	SDL_Rect Rect = GetRenderRect(Position);
+	
 	SDL_SetTextureAlphaMod(NodeResource->GetTexture(), IsPreview ? 150 : 255);
-	SDL_RenderCopy(Instance->GetRenderer(), NodeResource->GetTexture(), NULL, &GetRenderRect(Position));
+	SDL_RenderCopy(Instance->GetRenderer(), NodeResource->GetTexture(), NULL, &Rect);
 	
 	//Node::Draw(Instance, Position, IsPreview);
 

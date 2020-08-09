@@ -150,7 +150,6 @@ bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
 		if(!RootNodes[i]->Emit(Output, Problems))
 		{
 			Pass = false;
-			Problems.push_back(CompilationProblem{ RootNodes[i], "Couldn't compile overload " + to_string(i) + "! (see above)" });
 		}
 
 		// If last root node, end with semicolon (;) - otherwise, with full stop (.)

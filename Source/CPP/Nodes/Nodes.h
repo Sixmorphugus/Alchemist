@@ -8,6 +8,7 @@
 #include "CompilationProblem.h"
 
 class Alchemist;
+class Function;
 
 // todo adapt to shared_ptr (i.e. stop using dumb ptr)
 

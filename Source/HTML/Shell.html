@@ -5,13 +5,28 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<title>Emscripten-Generated Code</title>
 		<style>
-			.emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
-			textarea.emscripten { font-family: monospace; width: 80%; }
-			div.emscripten { text-align: center; }
+			textarea.emscripten { 
+				font-family: monospace;
+				resize: none;
+				overflow: auto;
+				width: 100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+			
+			div.emscripten {
+				margin: 0;
+				padding: 0;
+			}
+			
 			div.emscripten_border { border: 1px solid black; }
 			
 			/* the canvas *must not* have any border or padding, or mouse coords will be wrong */
-			canvas.emscripten { border: 0px none; background-color: black; }
+			canvas.emscripten { 
+				border: 0px none;
+				background-color: black;
+			}
 			
 			.spinner {
 				height: 50px;
@@ -49,14 +64,32 @@
 				to {transform: rotate(360deg);}
 			}
 			
-			body { margin:0; }
+			body { 
+				margin:0;
+			}
+			
+			table { 
+				border-collapse: collapse;
+				padding: 0;
+				margin: 0;
+			}
+			
+			td {
+				padding: 0; 
+				margin: 0;
+			}
 		</style>
 	</head>
 	<body>
 		<figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"><strong>emscripten</strong></center></figure>
 		<div class="emscripten" id="status">Downloading...</div>
-		<progress value="0" max="100" id="progress" hidden=1></progress>  
-		<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+		<progress value="0" max="100" id="progress" hidden=1></progress>
+		<table>
+			<tr>
+				<td><div class="emscripten" id="outputContainer"><textarea class="emscripten" id="output"></textarea></div></td>
+				<td><canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas></td>
+			</tr>
+		</table>
 		<script type='text/javascript'>
 			var statusElement = document.getElementById('status');
 			var progressElement = document.getElementById('progress');
@@ -88,8 +121,13 @@
 					// See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
 					canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
 
-					canvas.width = window.innerWidth;
-					canvas.height = window.innerHeight;
+					canvas.width = window.innerWidth * 0.7;
+					canvas.height = window.innerHeight - 5;
+
+					var cont = document.getElementById('outputContainer');
+
+					cont.style.width = (window.innerWidth * 0.3) + "px";
+					cont.style.height = (window.innerHeight - 4) + "px";
 
 					return canvas;
 				})(),
@@ -135,8 +173,13 @@
 			window.onresize = function(event) {
 				var canvas = document.getElementById('canvas');
 				
-				canvas.width = window.innerWidth;
-				canvas.height = window.innerHeight;
+				canvas.width = window.innerWidth * 0.7;
+				canvas.height = window.innerHeight - 5;
+				
+				var cont = document.getElementById('outputContainer');
+
+				cont.style.width = (window.innerWidth * 0.3) + "px";
+				cont.style.height = (window.innerHeight - 4) + "px";
 			}
 		</script>
 		{{{ SCRIPT }}}

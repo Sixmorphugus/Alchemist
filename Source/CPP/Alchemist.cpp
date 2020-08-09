@@ -21,11 +21,15 @@ int main(int argc, char* argv[])
 
 #if IS_WEB
 EM_JS(int, GetWindowWidthJS, (), {
-	return window.innerWidth;
+	return document.getElementById("canvas").width;
 });
 
 EM_JS(int, GetWindowHeightJS, (), {
-	return window.innerHeight;
+	return document.getElementById("canvas").height; 
+});
+
+EM_JS(void, EmitText, (const char* Text, int TextLen), {
+	return document.getElementById("output").value = UTF8ToString(Text, TextLen);
 });
 
 void LoopCallback(void* Arg)
@@ -94,7 +98,7 @@ void Alchemist::Compile()
 	string OutCode;
 	vector<CompilationProblem> OutProblems;
 
-	cout << endl << "COMPILING" << endl;
+	string OutPrint = "--- COMPILE RESULT ---\n\n";
 
 	bool Ok = true;
 	auto Functions = CurrentModule.GetFunctions();
@@ -112,29 +116,33 @@ void Alchemist::Compile()
 	if (Ok)
 	{
 		// Print the code
-		cout << OutCode << endl;
+		OutPrint += OutCode + "\n\n";
 	}
 	else
 	{
-		cout << "Compile failed!" << endl;
+		OutPrint += "FAILED\n\n";
 	}
 
 	// Always print the problems
 	if (OutProblems.size() > 0)
 	{
-		cout << endl << "Detected Problems:" << endl;
+		OutPrint += "--- PROBLEMS ---\n\n";
 
 		for (int i = 0; i < OutProblems.size(); i++)
 		{
+			// sorry god
 			Function* ProblemFunction = OutProblems[i].ProblemNode->GetFunction();
-			cout << "- (In " << (ProblemFunction->GetName() + ":" + to_string(ProblemFunction->GetArity())) << ") " << OutProblems[i].Problem << endl;
+			OutPrint += 
+				"- (In " + (ProblemFunction->GetName() + ":" + to_string(ProblemFunction->GetArity()))
+			  + " @ (" + to_string(OutProblems[i].ProblemNode->GetGridPosition().X) + ", " + to_string(OutProblems[i].ProblemNode->GetGridPosition().Y)
+			  + ")) " + OutProblems[i].Problem + "\n";
 		}
 	}
-	else
-	{
-		cout << endl << "No problems detected." << endl;
-	}
 
+#if IS_WEB
+	EmitText(OutPrint.c_str(), OutPrint.size());
+#endif
+	
 	// Leave the problems cached - we will display them until the code is recompiled, or a different function is opened.
 	// TODO do this per function?
 	ProblemsFromLastCompile = OutProblems;
@@ -172,6 +180,8 @@ void Alchemist::Frame()
 					GridHandleEvent(Event);
 				}
 			}
+
+			Compile();
 		}
 	}
 
@@ -238,7 +248,7 @@ Point Alchemist::GetCategoryButtonPosition(int Index) const
 #if IS_WEB
 EM_BOOL Alchemist::UiEvent(int Type, const EmscriptenUiEvent* UiEvent)
 {
-	SDL_SetWindowSize(Window, UiEvent->windowInnerWidth, UiEvent->windowInnerHeight);
+	SDL_SetWindowSize(Window, GetWindowWidthJS(), GetWindowHeightJS());
 	return EM_TRUE;
 }
 #endif
@@ -557,6 +567,12 @@ void Alchemist::DrawGrid() const
 			if (shared_ptr<Node> Connector = NodeOnGrid->GetConnector(i))
 			{
 				SDL_SetRenderDrawColor(Renderer, 0, 0, 0, 255);
+
+				if(NodeOnGrid->GetArgumentIsPattern(i))
+				{
+					SDL_SetRenderDrawColor(Renderer, 200, 0, 200, 255);
+				}
+				
 				DrawConnectorArrowOnGrid(Connector->GetGridPosition(), NodeOnGrid->GetGridPosition());
 			}
 		}
@@ -987,7 +1003,7 @@ bool Alchemist::GridHandleEvent(SDL_Event& Event)
 					CurrentFunction->PlaceNode(NodeOnMouse, MouseGridPosition);
 
 					NodeOnMouse.reset();
-
+					
 					return true;
 				}
 			}
@@ -1006,7 +1022,7 @@ bool Alchemist::GridHandleEvent(SDL_Event& Event)
 						NodeBeingConnectedTo.reset();
 					}
 				}
-
+				
 				return true;
 			}
 
@@ -1193,16 +1209,12 @@ vector<ToolbarOptionData> Alchemist::GetToolbarOptions() const
 	{
 		ToolbarOptionData Options = {
 			"Program...",
-			{ "New Function", "Generate Code" },
+			{ "New Function" },
 			{
 				[](Alchemist* Instance)
 				{
 					shared_ptr<Function> Func = Instance->GetCurrentModule()->CreateUniqueFunction();
 					Instance->ViewFunction(Func->GetName());
-				},
-				[](Alchemist* Instance)
-				{
-					Instance->Compile();
 				}
 			}
 		};

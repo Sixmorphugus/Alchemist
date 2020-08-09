@@ -6,26 +6,26 @@
 
 // Save me from boilerplate
 #define IMPLEMENT_POINT_ARITHMETIC(Op) \
-Point operator ## Op(const Point& RHS) const \
+Point operator Op(const Point& RHS) const \
 { \
 	Point Out = *this; \
 	Out.X Op ## = RHS.X; \
 	Out.Y Op ## = RHS.Y; \
 	return Out; \
 } \
-Point& operator ## Op ## =(const Point& RHS) \
+Point& operator Op ## =(const Point& RHS) \
 { \
 	*this = *this Op RHS; \
 	return *this; \
 } \
-Point operator ## Op(int RHS) const \
+Point operator Op(int RHS) const \
 { \
 	Point Out = *this; \
 	Out.X Op ## = RHS; \
 	Out.Y Op ## = RHS; \
 	return Out; \
 } \
-Point& operator ## Op ## =(int RHS) \
+Point& operator Op ## =(int RHS) \
 { \
 	*this = *this Op RHS; \
 	return *this; \

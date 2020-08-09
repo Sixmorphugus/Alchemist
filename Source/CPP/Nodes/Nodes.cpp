@@ -84,8 +84,10 @@ void Node::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview
 	SDL_SetTextureAlphaMod(RingResource->GetTexture(), IsPreview ? 150 : 255);
 	SDL_SetTextureAlphaMod(NodeResource->GetTexture(), IsPreview ? 150 : 255);
 
-	SDL_RenderCopy(Instance->GetRenderer(), RingResource->GetTexture(), NULL, &GetRenderRect(Position));
-	SDL_RenderCopy(Instance->GetRenderer(), NodeResource->GetTexture(), NULL, &GetRenderRect(Position));
+	SDL_Rect Rect = GetRenderRect(Position);
+	
+	SDL_RenderCopy(Instance->GetRenderer(), RingResource->GetTexture(), NULL, &Rect);
+	SDL_RenderCopy(Instance->GetRenderer(), NodeResource->GetTexture(), NULL, &Rect);
 }
 
 SDL_Rect Node::GetRenderRect(const Point& Position) const

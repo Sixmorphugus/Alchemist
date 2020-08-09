@@ -60,6 +60,8 @@ bool Node_UserDefined::Emit(string& Output, vector<CompilationProblem>& Problems
 	}
 
 	Output += Func.lock()->GetName() + "(";
+
+	bool Success = true;
 	
 	for (int i = 0; i < Func.lock()->GetArity(); i++)
 	{
@@ -71,8 +73,8 @@ bool Node_UserDefined::Emit(string& Output, vector<CompilationProblem>& Problems
 		}
 		else
 		{
-			Problems.push_back(CompilationProblem{ shared_from_this(), "Required argument " + to_string(i) + " missing." });
-			return false;
+			Problems.push_back(CompilationProblem{ shared_from_this(), "Required argument " + to_string(i+1) + " missing." });
+			Success = false;
 		}
 
 		if(i + 1 < Func.lock()->GetArity())
@@ -83,7 +85,7 @@ bool Node_UserDefined::Emit(string& Output, vector<CompilationProblem>& Problems
 
 	Output += ")";
 	
-	return true;
+	return Success;
 }
 
 void Node_UserDefined::OnModuleChanged()
@@ -107,6 +109,6 @@ void Node_UserDefined::SetupArgs()
 	// Create all needed args
 	for (int i = 0; i < Func.lock()->GetArity(); i++)
 	{
-		RegisterArgument("Arg" + to_string(i));
+		RegisterArgument("Arg" + to_string(i+1));
 	}
 }

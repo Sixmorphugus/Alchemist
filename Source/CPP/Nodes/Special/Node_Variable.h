@@ -28,5 +28,5 @@ public:
 	string GetName() { return Name; }
 
 protected:
-	string Name = "i";
+	string Name = "I";
 };

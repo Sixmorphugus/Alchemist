@@ -20,20 +20,22 @@ void Node_Root::Draw(const Alchemist* Instance, const Point& Position, bool IsPr
 {
 	Node::Draw(Instance, Position, IsPreview);
 
+	SDL_Rect Rect = GetRenderRect(Position);
+	
 	// Draw fill circle
 	shared_ptr<Resource_Image> FillResource = Instance->GetResourceManager()->GetResource<Resource_Image>("NodeFill.png");
 
 	SDL_SetTextureAlphaMod(FillResource->GetTexture(), IsPreview ? 150 : 255);
 	SDL_SetTextureColorMod(FillResource->GetTexture(), 0, 0, 0);
 	
-	SDL_RenderCopy(Instance->GetRenderer(), FillResource->GetTexture(), NULL, &GetRenderRect(Position));
+	SDL_RenderCopy(Instance->GetRenderer(), FillResource->GetTexture(), NULL, &Rect);
 
 	// Draw @
 	shared_ptr<Resource_Image> ArobaseResource = Instance->GetResourceManager()->GetResource<Resource_Image>("NodeIcon_Root.png");
 
 	SDL_SetTextureAlphaMod(ArobaseResource->GetTexture(), IsPreview ? 150 : 255);
 
-	SDL_RenderCopy(Instance->GetRenderer(), ArobaseResource->GetTexture(), NULL, &GetRenderRect(Position));
+	SDL_RenderCopy(Instance->GetRenderer(), ArobaseResource->GetTexture(), NULL, &Rect);
 }
 
 bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
@@ -64,7 +66,10 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 		else
 		{
 			// Emit it
-			ArgPatternArg->Emit(Output, Problems);
+			if(!ArgPatternArg->Emit(Output, Problems))
+			{
+				Success = false;
+			}
 		}
 
 		// Comma if required
