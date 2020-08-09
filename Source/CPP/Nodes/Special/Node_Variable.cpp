@@ -3,6 +3,7 @@
 #include "Node_Variable.h"
 #include "Resources/Resource_Font.h"
 #include "Alchemist.h"
+#include "Resources/Resource_Image.h"
 
 shared_ptr<Node> Node_Variable::Clone() const
 {
@@ -11,7 +12,14 @@ shared_ptr<Node> Node_Variable::Clone() const
 
 void Node_Variable::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview) const
 {
-	Node::Draw(Instance, Position, IsPreview);
+	shared_ptr<Resource_Image> NodeResource = Instance->GetResourceManager()->GetResource<Resource_Image>("Node.png");
+
+	assert(NodeResource);
+
+	SDL_Rect Rect = GetRenderRect(Position);
+
+	SDL_SetTextureAlphaMod(NodeResource->GetTexture(), IsPreview ? 150 : 255);
+	SDL_RenderCopy(Instance->GetRenderer(), NodeResource->GetTexture(), NULL, &Rect);
 
 	shared_ptr<Resource_Font> Font = Instance->GetResourceManager()->GetResource<Resource_Font>("Font.ttf");
 
