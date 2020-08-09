@@ -121,12 +121,12 @@
 					// See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
 					canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
 
-					canvas.width = window.innerWidth * 0.7;
+					canvas.width = window.innerWidth * 0.75;
 					canvas.height = window.innerHeight - 5;
 
 					var cont = document.getElementById('outputContainer');
 
-					cont.style.width = (window.innerWidth * 0.3) + "px";
+					cont.style.width = (window.innerWidth * 0.25) + "px";
 					cont.style.height = (window.innerHeight - 4) + "px";
 
 					return canvas;
@@ -173,12 +173,12 @@
 			window.onresize = function(event) {
 				var canvas = document.getElementById('canvas');
 				
-				canvas.width = window.innerWidth * 0.7;
+				canvas.width = window.innerWidth * 0.75;
 				canvas.height = window.innerHeight - 5;
 				
 				var cont = document.getElementById('outputContainer');
 
-				cont.style.width = (window.innerWidth * 0.3) + "px";
+				cont.style.width = (window.innerWidth * 0.25) + "px";
 				cont.style.height = (window.innerHeight - 4) + "px";
 			}
 		</script>

@@ -134,8 +134,11 @@ private:
 	/** Draws connector relative to grid. */
 	void DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2) const;
 
+	/** Draws a tooltip. */
+	void DrawTooltip(const string& Text, int YOffset = 0) const;
+	
 	/** Draws tooltip. */
-	void DrawTooltip(const shared_ptr<Node>& node) const;
+	void DrawNodeTooltip(const shared_ptr<Node>& Node) const;
 
 	/** Returns the default font. */
 	shared_ptr<Resource_Font> GetDefaultFont() const;

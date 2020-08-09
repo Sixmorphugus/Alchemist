@@ -19,7 +19,7 @@ public:
 
 	// Node interface.
 	virtual string GetDisplayName() const override;
-	virtual string GetCategory() const override { return "Module"; }
+	virtual string GetCategory() const override { return "Your Program"; }
 	virtual shared_ptr<Node> Clone() const override;
 	virtual void Draw(const Alchemist* Instance, const Point& Position, bool IsPreview = false) const override;
 	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) override;

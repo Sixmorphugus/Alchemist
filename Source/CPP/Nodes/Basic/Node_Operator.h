@@ -35,6 +35,20 @@ public:
 	static inline string SymbolChar = "/";
 };
 
+class BinaryOperatorTraits_Remainder
+{
+public:
+	static inline string Name = "Remainder";
+	static inline string SymbolChar = "rem";
+};
+
+class BinaryOperatorTraits_DivideRounded
+{
+public:
+	static inline string Name = "Divide (Rounded)";
+	static inline string SymbolChar = "div";
+};
+
 class BinaryOperatorTraits_Equal
 {
 public:
@@ -81,14 +95,42 @@ class BinaryOperatorTraits_And
 {
 public:
 	static inline string Name = "And";
-	static inline string SymbolChar = "&&";
+	static inline string SymbolChar = "and";
 };
 
 class BinaryOperatorTraits_Or
 {
 public:
 	static inline string Name = "Or";
-	static inline string SymbolChar = "||";
+	static inline string SymbolChar = "or";
+};
+
+class BinaryOperatorTraits_XOr
+{
+public:
+	static inline string Name = "XOr";
+	static inline string SymbolChar = "xor";
+};
+
+class BinaryOperatorTraits_BitwiseAnd
+{
+public:
+	static inline string Name = "Bitwise And";
+	static inline string SymbolChar = "band";
+};
+
+class BinaryOperatorTraits_BitwiseOr
+{
+public:
+	static inline string Name = "Bitwise Or";
+	static inline string SymbolChar = "bor";
+};
+
+class BinaryOperatorTraits_BitwiseXOr
+{
+public:
+	static inline string Name = "Bitwise XOr";
+	static inline string SymbolChar = "bxor";
 };
 
 
@@ -181,6 +223,101 @@ public:
 		Output += ")";
 		
 		return bLHS && bRHS;
+	}
+	// End of Node interface.
+};
+
+
+class UnaryOperatorTraits_Not
+{
+public:
+	static inline string Name = "Not";
+	static inline string SymbolChar = "not";
+};
+
+class BinaryOperatorTraits_BitwiseNot
+{
+public:
+	static inline string Name = "Bitwise Not";
+	static inline string SymbolChar = "bnot";
+};
+
+
+/**
+ * Term nodes are a constant value.
+ * There are different kinds for different types.
+ */
+template<typename OperatorTraits>
+class Node_UnaryOperator : public Node
+{
+public:
+	Node_UnaryOperator()
+	{
+		// Register args.
+		RegisterArgument("Input");
+	}
+
+	// Node interface.
+	virtual shared_ptr<Node> Clone() const override
+	{
+		return make_shared<Node_UnaryOperator<OperatorTraits>>();
+	}
+
+	virtual string GetDisplayName() const override
+	{
+		return OperatorTraits::Name;
+	}
+
+	virtual string GetCategory() const override
+	{
+		return "Operators";
+	}
+
+	virtual void Draw(const Alchemist* Instance, const Point& Position, bool IsPreview = false) const override
+	{
+		Node::Draw(Instance, Position, IsPreview);
+
+		shared_ptr<Resource_Font> Font = Instance->GetResourceManager()->GetResource<Resource_Font>("Font.ttf");
+
+		SDL_Texture* Tex = Font->GetStringTexture(OperatorTraits::SymbolChar);
+		Size Siz = Font->GetStringScreenSize(OperatorTraits::SymbolChar);
+
+		SDL_SetTextureColorMod(Tex, 0, 0, 0);
+
+		SDL_Rect TexDestRect
+		{
+			Position.X + 32 - (Siz.X / 2),
+			Position.Y + 16,
+			Siz.X,
+			Siz.Y
+		};
+
+		SDL_RenderCopy(Instance->GetRenderer(), Tex, NULL, &TexDestRect);
+	}
+
+	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) override
+	{
+		bool bInput = false;
+
+		Output += "(";
+
+		Output += OperatorTraits::SymbolChar + " ";
+
+		if (shared_ptr<Node> Input = GetConnector(1))
+		{
+			if (Input->Emit(Output, Problems))
+			{
+				bInput = true;
+			}
+		}
+		else
+		{
+			Problems.push_back(CompilationProblem{ shared_from_this(), "Missing Input expression." });
+		}
+
+		Output += ")";
+
+		return bInput;
 	}
 	// End of Node interface.
 };

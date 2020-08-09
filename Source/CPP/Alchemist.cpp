@@ -451,7 +451,7 @@ void Alchemist::DrawNodePalette() const
 			SDL_RenderFillRect(Renderer, &Rect);
 
 			// Draw node name
-			DrawTooltip(CurrentCategory.Nodes[i]);
+			DrawNodeTooltip(CurrentCategory.Nodes[i]);
 		}
 
 		CurrentCategory.Nodes[i]->Draw(this, GetPaletteItemPosition(i));
@@ -463,8 +463,8 @@ void Alchemist::DrawNodePalette() const
 		Point CategoryButtonPos = GetCategoryButtonPosition(i);
 
 		SDL_Rect Rect{ CategoryButtonPos.X, CategoryButtonPos.Y, GridSize, GridSize };
-
-		SDL_SetRenderDrawColor(Renderer, 0, 0, 0, i == PaletteCategory ? 100 : 50);
+		
+		SDL_SetRenderDrawColor(Renderer, 0, 0, 0, i == PaletteCategory || MousePos.IsInRectangle(Rect) ? 100 : 50);
 		SDL_RenderFillRect(Renderer, &Rect);
 
 		if (i == PaletteCategory)
@@ -501,6 +501,19 @@ void Alchemist::DrawNodePalette() const
 	PaletteRect.y = GetCategoryButtonPosition(PaletteCategory).Y + GridSize;
 	PaletteRect.h = GetWindowSize().Y - GetCategoryButtonPosition(PaletteCategory).Y + GridSize - ToolbarHeight - (ToolbarPadding * 2);
 	SDL_RenderFillRect(Renderer, &PaletteRect);
+
+	// Tooltip?
+	for (int i = 0; i < CategorisedNodes.size(); i++)
+	{
+		Point CategoryButtonPos = GetCategoryButtonPosition(i);
+
+		SDL_Rect Rect{ CategoryButtonPos.X, CategoryButtonPos.Y, GridSize, GridSize };
+
+		if(MousePos.IsInRectangle(Rect))
+		{
+			DrawTooltip(CategorisedNodes[i].Name);
+		}
+	}
 }
 
 void Alchemist::DrawGrid() const
@@ -621,7 +634,7 @@ void Alchemist::DrawGrid() const
 
 		if (NodeUnderMouse && MousePos.X < GetWindowSize().X - SidebarWidth)
 		{
-			DrawTooltip(NodeUnderMouse);
+			DrawNodeTooltip(NodeUnderMouse);
 		}
 	}
 
@@ -1129,29 +1142,47 @@ void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point
 	DrawConnectorArrow(this, ScreenPoint1, ScreenPoint2);
 }
 
-void Alchemist::DrawTooltip(const shared_ptr<Node>& Node) const
+void Alchemist::DrawTooltip(const string& Text, int YOffset) const
 {
 	shared_ptr<Resource_Font> Font = GetDefaultFont();
-	
-	string NodeDetailText = Node->GetDisplayName();
 
-	SDL_Texture* DisplayTexture = Font->GetStringTexture(NodeDetailText);
-	Size DisplaySize = Font->GetStringScreenSize(NodeDetailText);
+	SDL_Texture* DisplayTexture = Font->GetStringTexture(Text);
+	Size DisplaySize = Font->GetStringScreenSize(Text);
 
 	SDL_Rect DisplayRect;
 
 	DisplayRect.x = MousePos.X + 20;
-	DisplayRect.y = MousePos.Y + 20;
+	DisplayRect.y = MousePos.Y + 20 + YOffset;
 	DisplayRect.w = DisplaySize.X;
 	DisplayRect.h = DisplaySize.Y;
 
-	if(DisplayRect.x + DisplayRect.w > GetWindowSize().X)
+	if (DisplayRect.x + DisplayRect.w > GetWindowSize().X)
 	{
 		DisplayRect.x -= DisplayRect.w;
 	}
 
 	SDL_SetTextureColorMod(DisplayTexture, 0, 0, 0);
 	SDL_RenderCopy(Renderer, DisplayTexture, NULL, &DisplayRect);
+}
+
+void Alchemist::DrawNodeTooltip(const shared_ptr<Node>& NodeIn) const
+{
+	string NodeDetailText = NodeIn->GetDisplayName() + ":" + to_string(NodeIn->GetNumArguments());
+
+	DrawTooltip(NodeDetailText);
+
+	int TooltipNo = 1;
+	
+	for(int i = 0; i < NodeIn->GetNumArguments(); i++)
+	{
+		if(shared_ptr<Node> Connector = NodeIn->GetConnector(i))
+		{
+			string DetailText = NodeIn->GetArgumentName(i) + " = " + Connector->GetDisplayName() + ":" + to_string(Connector->GetNumArguments());
+			DrawTooltip(DetailText, TooltipNo * 40);
+
+			TooltipNo++;
+		}
+	}
 }
 
 shared_ptr<Resource_Font> Alchemist::GetDefaultFont() const
