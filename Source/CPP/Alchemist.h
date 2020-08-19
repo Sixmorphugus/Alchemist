@@ -132,10 +132,10 @@ private:
 	int GetPaletteSelection(const Category& CurrentCategory) const;
 	
 	/** Draws connector relative to grid. */
-	void DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2) const;
+	void DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2, int ConnectorId = -1) const;
 
 	/** Draws a tooltip. */
-	void DrawTooltip(const string& Text, int YOffset = 0) const;
+	void DrawTooltip(const string& Text, int YOffset = 0, int Size = 30) const;
 	
 	/** Draws tooltip. */
 	void DrawNodeTooltip(const shared_ptr<Node>& Node) const;

@@ -14,26 +14,27 @@ public:
 	Resource_Font() = default;
 	~Resource_Font();
 
-	/** Handles loading the resource file. */
+	/** Handles loading the resource files. */
 	virtual bool Load(Alchemist* Instance, string FileName) override;
 
-	/** Returns the loaded font. */
-	TTF_Font* GetFont() const { return Font; }
-
 	/** Returns the texture for the given string. */
-	SDL_Texture* GetStringTexture(string Name);
+	SDL_Texture* GetStringTexture(string Name, int Size = 30);
 
 	/** Returns the screen size for the given string. */
-	Size GetStringScreenSize(string Name);
+	Size GetStringScreenSize(string Name, int Size = 30);
 
 private:
-	void CreateTexture(string Name);
+	SDL_Texture* CreateTexture(string Name, int Size = 30);
+	TTF_Font* LoadSize(int Size);
 
 private:
-	TTF_Font* Font = nullptr;
+	string FontFileName;
 	
-	unordered_map<string, SDL_Texture*> RenderedStrings;
-	unordered_map<string, Size> RenderedStringSizes;
+	unordered_map<int, TTF_Font*> Fonts;
+	vector<TTF_Font*> CreatedFontInstances;
+	
+	unordered_map<int, unordered_map<string, SDL_Texture*>> RenderedStrings;
+	unordered_map<int, unordered_map<string, Size>> RenderedStringSizes;
 	vector<SDL_Texture*> RenderedStringTextures;
 
 	Alchemist* AInstance;

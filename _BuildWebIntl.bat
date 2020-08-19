@@ -36,7 +36,7 @@ if not exist "%VisualStudioLocation%" (
 echo *** Found at %VisualStudioLocation%.
 echo *** Preparing...
 
-call "%VisualStudioLocation%\VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.26 || goto :error
+call "%VisualStudioLocation%\VC\Auxiliary\Build\vcvars64.bat" || goto :error
 
 echo *** Prepared.
 

@@ -51,7 +51,7 @@ public:
 	/** Deletes node. */
 	void RemoveNode(const shared_ptr<Node>& NodeInstance);
 
-	/** Deletes node. */
+	/** Returns ID of node. */
 	int GetNodeId(const shared_ptr<Node>& NodeInstance) const;
 
 	/** Returns a copy of the list of all nodes. */

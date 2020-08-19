@@ -275,7 +275,7 @@ Size Alchemist::GetOptionsMenuOptionSize(const shared_ptr<Node>& NodeOnGrid) con
 
 	for (int i = 0; i < NodeOnGrid->GetNumArguments(); i++)
 	{
-		string Argument = NodeOnGrid->GetArgumentName(i);
+		string Argument = to_string(i+1) + "  " + NodeOnGrid->GetArgumentName(i);
 
 		Size StringSize = FontResource->GetStringScreenSize(Argument);
 
@@ -560,7 +560,7 @@ void Alchemist::DrawGrid() const
 			GridSize,
 			GridSize
 		};
-
+		
 		if (NodeOnGrid == NodeLastSelected.lock())
 		{
 			// Draw selection rectangle.
@@ -586,7 +586,7 @@ void Alchemist::DrawGrid() const
 					SDL_SetRenderDrawColor(Renderer, 200, 0, 200, 255);
 				}
 				
-				DrawConnectorArrowOnGrid(Connector->GetGridPosition(), NodeOnGrid->GetGridPosition());
+				DrawConnectorArrowOnGrid(Connector->GetGridPosition(), NodeOnGrid->GetGridPosition(), i);
 			}
 		}
 	}
@@ -675,7 +675,7 @@ void Alchemist::DrawGrid() const
 				OptionPosition.Y,
 				OptionSize.X,
 				OptionSize.Y
-		};
+			};
 
 			// Turn per-option size into full menu size.
 			OptionsRect.h *= NodeBeingConnectedTo->GetNumArguments();
@@ -695,7 +695,7 @@ void Alchemist::DrawGrid() const
 			for (int i = 0; i < NodeBeingConnectedTo->GetNumArguments(); i++)
 			{
 				// For rendering string
-				string Argument = NodeBeingConnectedTo->GetArgumentName(i);
+				string Argument = to_string(i+1) + "  " + NodeBeingConnectedTo->GetArgumentName(i);
 
 				Size StringSize = Font->GetStringScreenSize(Argument);
 
@@ -706,6 +706,11 @@ void Alchemist::DrawGrid() const
 					StringSize.Y
 				};
 
+				SDL_Rect ConnectedRect = Rect;
+
+				ConnectedRect.x -= 2;
+				ConnectedRect.w = 20;
+
 				// For rendering highlight
 				SDL_Rect HighlightRect = {
 					OptionsRect.x,
@@ -714,12 +719,19 @@ void Alchemist::DrawGrid() const
 					OptionSize.Y
 				};
 
-				// Render highlight first, IF the mouse is within its area.
+				// Render "connected" marking rectangle
+				if (NodeBeingConnectedTo->GetConnector(i))
+				{
+					SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 100);
+					SDL_RenderFillRect(Renderer, &ConnectedRect);
+				}
+				
+				// Render highlight, IF the mouse is within its area.
 				if (MousePos.IsInRectangle(HighlightRect))
 				{
 					SDL_SetRenderDrawColor(Renderer, 255, 255, 255, 100);
 					SDL_RenderFillRect(Renderer, &HighlightRect);
-			}
+				}
 
 				// Then string
 				SDL_RenderCopy(Renderer, Font->GetStringTexture(Argument), NULL, &Rect);
@@ -1126,7 +1138,7 @@ int Alchemist::GetPaletteSelection(const Category& CurrentCategory) const
 	return PaletteSelection;
 }
 
-void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2) const
+void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point2, int ConnectorId) const
 {
 	Point ScreenPoint1 = GridToScreen(Point1) + (GridSize / 2);
 	Point ScreenPoint2 = GridToScreen(Point2) + (GridSize / 2);
@@ -1140,14 +1152,40 @@ void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point
 	ScreenPoint2 -= PushVector;
 	
 	DrawConnectorArrow(this, ScreenPoint1, ScreenPoint2);
+
+	// Draw number of connector
+	if(ConnectorId != -1)
+	{
+		shared_ptr<Resource_Font> Font = GetDefaultFont();
+
+		string IdStr = to_string(ConnectorId+1);
+
+		SDL_Texture* DisplayTexture = Font->GetStringTexture(IdStr, 18);
+		::Size DisplaySize = Font->GetStringScreenSize(IdStr, 18);
+
+		SDL_Rect DisplayRect;
+
+		DisplayRect.x = ScreenPoint2.X;
+		DisplayRect.y = ScreenPoint2.Y + 20;
+		DisplayRect.w = DisplaySize.X;
+		DisplayRect.h = DisplaySize.Y;
+
+		if (DisplayRect.x + DisplayRect.w > GetWindowSize().X)
+		{
+			DisplayRect.x -= DisplayRect.w;
+		}
+
+		SDL_SetTextureColorMod(DisplayTexture, 0, 0, 0);
+		SDL_RenderCopy(Renderer, DisplayTexture, NULL, &DisplayRect);
+	}
 }
 
-void Alchemist::DrawTooltip(const string& Text, int YOffset) const
+void Alchemist::DrawTooltip(const string& Text, int YOffset, int Size) const
 {
 	shared_ptr<Resource_Font> Font = GetDefaultFont();
 
-	SDL_Texture* DisplayTexture = Font->GetStringTexture(Text);
-	Size DisplaySize = Font->GetStringScreenSize(Text);
+	SDL_Texture* DisplayTexture = Font->GetStringTexture(Text, Size);
+	::Size DisplaySize = Font->GetStringScreenSize(Text, Size);
 
 	SDL_Rect DisplayRect;
 
@@ -1171,16 +1209,12 @@ void Alchemist::DrawNodeTooltip(const shared_ptr<Node>& NodeIn) const
 
 	DrawTooltip(NodeDetailText);
 
-	int TooltipNo = 1;
-	
 	for(int i = 0; i < NodeIn->GetNumArguments(); i++)
 	{
 		if(shared_ptr<Node> Connector = NodeIn->GetConnector(i))
 		{
 			string DetailText = NodeIn->GetArgumentName(i) + " = " + Connector->GetDisplayName() + ":" + to_string(Connector->GetNumArguments());
-			DrawTooltip(DetailText, TooltipNo * 40);
-
-			TooltipNo++;
+			DrawTooltip(DetailText, 30 + (i * 20), 18);
 		}
 	}
 }
