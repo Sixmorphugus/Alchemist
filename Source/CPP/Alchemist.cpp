@@ -1156,6 +1156,18 @@ void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point
 	// Draw number of connector
 	if(ConnectorId != -1)
 	{
+		// Cursed maths to know where to put the number
+		double Sigma = atan2(ScreenPoint2.Y - ScreenPoint1.Y, ScreenPoint2.X - ScreenPoint1.X);
+
+		double S = Sigma + (90 * (3.14 / 180));
+
+		double r = 40;
+
+		Point P((int)(r * cos(S)), (int)(r * sin(S)));
+
+		P += ScreenPoint2;
+
+		// Now draw it
 		shared_ptr<Resource_Font> Font = GetDefaultFont();
 
 		string IdStr = to_string(ConnectorId+1);
@@ -1165,8 +1177,8 @@ void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point
 
 		SDL_Rect DisplayRect;
 
-		DisplayRect.x = ScreenPoint2.X;
-		DisplayRect.y = ScreenPoint2.Y + 20;
+		DisplayRect.x = P.X - (DisplaySize.X / 2);
+		DisplayRect.y = P.Y - (DisplaySize.Y / 2);
 		DisplayRect.w = DisplaySize.X;
 		DisplayRect.h = DisplaySize.Y;
 
