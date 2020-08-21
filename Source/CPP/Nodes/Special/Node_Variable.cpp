@@ -42,7 +42,7 @@ void Node_Variable::Draw(const Alchemist* Instance, const Point& Position, bool 
 	}
 }
 
-bool Node_Variable::Emit(string& Output, vector<CompilationProblem>& Problems)
+bool Node_Variable::EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path)
 {
 	if(Name.size() == 0)
 	{

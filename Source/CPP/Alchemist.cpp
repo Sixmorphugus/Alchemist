@@ -131,10 +131,10 @@ void Alchemist::Compile()
 		for (int i = 0; i < OutProblems.size(); i++)
 		{
 			// sorry god
-			Function* ProblemFunction = OutProblems[i].ProblemNode->GetFunction();
+			Function* ProblemFunction = OutProblems[i].ProblemNode.lock()->GetFunction();
 			OutPrint += 
 				"- (In " + (ProblemFunction->GetName() + ":" + to_string(ProblemFunction->GetArity()))
-			  + " @ (" + to_string(OutProblems[i].ProblemNode->GetGridPosition().X) + ", " + to_string(OutProblems[i].ProblemNode->GetGridPosition().Y)
+			  + " @ (" + to_string(OutProblems[i].ProblemNode.lock()->GetGridPosition().X) + ", " + to_string(OutProblems[i].ProblemNode.lock()->GetGridPosition().Y)
 			  + ")) " + OutProblems[i].Problem + "\n";
 		}
 	}
@@ -1161,7 +1161,7 @@ void Alchemist::DrawConnectorArrowOnGrid(const Point& Point1, const Point& Point
 
 		double S = Sigma + (90 * (3.14 / 180));
 
-		double r = 40;
+		double r = 20;
 
 		Point P((int)(r * cos(S)), (int)(r * sin(S)));
 
@@ -1221,12 +1221,16 @@ void Alchemist::DrawNodeTooltip(const shared_ptr<Node>& NodeIn) const
 
 	DrawTooltip(NodeDetailText);
 
+	int Num = 0;
+	
 	for(int i = 0; i < NodeIn->GetNumArguments(); i++)
 	{
 		if(shared_ptr<Node> Connector = NodeIn->GetConnector(i))
 		{
 			string DetailText = NodeIn->GetArgumentName(i) + " = " + Connector->GetDisplayName() + ":" + to_string(Connector->GetNumArguments());
-			DrawTooltip(DetailText, 30 + (i * 20), 18);
+			DrawTooltip(DetailText, 30 + (Num * 20), 18);
+
+			Num++;
 		}
 	}
 }

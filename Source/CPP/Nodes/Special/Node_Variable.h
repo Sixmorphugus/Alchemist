@@ -19,7 +19,7 @@ public:
 	//virtual void Load(const ifstream& FileStream) override;
 	//virtual void Save(const ofstream& FileStream) const override;
 	//virtual size_t GetDataSize() const override;
-	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) override;
+	virtual bool EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path) override;
 	virtual void HandleTextInput(const SDL_Event& Event) override;
 	virtual void HandleKeyPress(const SDL_Event& Event) override;
 	// End of Node interface.

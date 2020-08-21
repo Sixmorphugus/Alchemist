@@ -147,7 +147,7 @@ bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
 	
 	for(int i = 0; i < RootNodes.size(); i++)
 	{
-		if(!RootNodes[i]->Emit(Output, Problems))
+		if(!RootNodes[i]->Emit(Output, Problems, {}))
 		{
 			Pass = false;
 		}

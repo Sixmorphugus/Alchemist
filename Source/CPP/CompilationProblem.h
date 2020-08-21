@@ -7,6 +7,6 @@
 /* Compile error info. */
 struct CompilationProblem
 {
-	shared_ptr<Node> ProblemNode;
+	weak_ptr<Node> ProblemNode;
 	string Problem;
 };

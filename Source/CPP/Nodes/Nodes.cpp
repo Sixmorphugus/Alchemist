@@ -73,6 +73,30 @@ void Node::ClearArguments()
 	ArgumentLookupTable.clear();
 }
 
+bool Node::Emit(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path)
+{
+	// Check for infinite loop
+	for(shared_ptr<Node> PathNode : Path)
+	{
+		if(PathNode == shared_from_this())
+		{
+			Problems.push_back(CompilationProblem{ shared_from_this(), "Infinite loop detected!" });
+			return false;
+		}
+	}
+
+	// Add self to path
+	Path.push_back(shared_from_this());
+
+	// Call internal emit
+	bool Result = EmitInternal(Output, Problems, Path);
+	
+	// Remove self from path
+	Path.erase(Path.end() - 1);
+
+	return Result;
+}
+
 void Node::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview) const
 {
 	shared_ptr<Resource_Image> RingResource = Instance->GetResourceManager()->GetResource<Resource_Image>("NodeRing.png");

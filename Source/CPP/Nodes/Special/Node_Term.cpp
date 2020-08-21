@@ -58,7 +58,7 @@ size_t Node_Term_Int::GetDataSize() const
 	return sizeof(int);
 }
 
-bool Node_Term_Int::Emit(string& Output, vector<CompilationProblem>& Problems)
+bool Node_Term_Int::EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path)
 {
 	Output += to_string(Value);
 

@@ -51,7 +51,7 @@ void Node_UserDefined::Draw(const Alchemist* Instance, const Point& Position, bo
 	}
 }
 
-bool Node_UserDefined::Emit(string& Output, vector<CompilationProblem>& Problems)
+bool Node_UserDefined::EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path)
 {
 	if(Func.expired())
 	{
@@ -69,7 +69,7 @@ bool Node_UserDefined::Emit(string& Output, vector<CompilationProblem>& Problems
 
 		if(Connector)
 		{
-			Connector->Emit(Output, Problems);
+			Connector->Emit(Output, Problems, Path);
 		}
 		else
 		{

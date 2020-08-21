@@ -20,7 +20,7 @@ class Function;
  * - Serialize and Deserialize functions for saving
  * - Type node returns
  * - Argument names and types
- * - Emit function for creating a line of Erlang code.
+ * - EmitInternal function for creating a line of Erlang code.
  */
 class Node : public enable_shared_from_this<Node>
 {
@@ -116,8 +116,8 @@ private:
 
 
 public:
-	/** Emits this node's Erlang code. Arguably the most important function. */
-	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) = 0;
+	/** Checks for an infinite loop before calling EmitInternal. */
+	bool Emit(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path);
 	
 	/** Draws the node somewhere on-screen. */
 	virtual void Draw(const Alchemist* Instance, const Point& Position, bool IsPreview = false) const;
@@ -141,6 +141,9 @@ public:
 	Point GetGridPosition() const { return GridPosition; }
 
 protected:
+	/** Emits this node's Erlang code. Arguably the most important function. */
+	virtual bool EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path) = 0;
+	
 	/** Triggers when an instance of the node is placed in a function, or the function signature is changed. */
 	virtual void OnFunctionChanged() {}
 

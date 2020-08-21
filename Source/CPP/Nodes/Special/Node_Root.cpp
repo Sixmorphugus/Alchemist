@@ -38,7 +38,7 @@ void Node_Root::Draw(const Alchemist* Instance, const Point& Position, bool IsPr
 	SDL_RenderCopy(Instance->GetRenderer(), ArobaseResource->GetTexture(), NULL, &Rect);
 }
 
-bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
+bool Node_Root::EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path)
 {
 	// Root nodes emit a full function definition minus the terminating character (. or ;) which is handled by the function emit function.
 	// First we emit the function header. This includes:
@@ -66,7 +66,7 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 		else
 		{
 			// Emit it
-			if(!ArgPatternArg->Emit(Output, Problems))
+			if(!ArgPatternArg->Emit(Output, Problems, Path))
 			{
 				Success = false;
 			}
@@ -87,7 +87,7 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 	{
 		Output += "when ";
 		
-		if(!Guard->Emit(Output, Problems))
+		if(!Guard->Emit(Output, Problems, Path))
 		{
 			Success = false;
 		}
@@ -100,7 +100,7 @@ bool Node_Root::Emit(string& Output, vector<CompilationProblem>& Problems)
 	// Output the nested expression.
 	if (shared_ptr<Node> Expression = GetConnector(0))
 	{
-		if(!Expression->Emit(Output, Problems))
+		if(!Expression->Emit(Output, Problems, Path))
 		{
 			Success = false;
 		}

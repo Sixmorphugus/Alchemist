@@ -187,7 +187,7 @@ public:
 		SDL_RenderCopy(Instance->GetRenderer(), Tex, NULL, &TexDestRect);
 	}
 
-	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) override
+	virtual bool EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path) override
 	{
 		bool bLHS = false;
 		bool bRHS = false;
@@ -196,7 +196,7 @@ public:
 		
 		if(shared_ptr<Node> LHS = GetConnector(0))
 		{
-			if (LHS->Emit(Output, Problems))
+			if (LHS->Emit(Output, Problems, Path))
 			{
 				bLHS = true;
 			}
@@ -210,7 +210,7 @@ public:
 		
 		if (shared_ptr<Node> RHS = GetConnector(1))
 		{
-			if (RHS->Emit(Output, Problems))
+			if (RHS->Emit(Output, Problems, Path))
 			{
 				bRHS = true;
 			}
@@ -295,7 +295,7 @@ public:
 		SDL_RenderCopy(Instance->GetRenderer(), Tex, NULL, &TexDestRect);
 	}
 
-	virtual bool Emit(string& Output, vector<CompilationProblem>& Problems) override
+	virtual bool EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path) override
 	{
 		bool bInput = false;
 
@@ -305,7 +305,7 @@ public:
 
 		if (shared_ptr<Node> Input = GetConnector(1))
 		{
-			if (Input->Emit(Output, Problems))
+			if (Input->Emit(Output, Problems, Path))
 			{
 				bInput = true;
 			}
