@@ -915,7 +915,7 @@ bool Alchemist::PaletteHandleEvent(SDL_Event& Event)
 		}
 		case SDL_MOUSEBUTTONUP:
 		{
-			if (Event.button.button == 0 && Event.motion.x > GetWindowSize().X - SidebarWidth - GridSize)
+			if (Event.button.button == 1 && Event.motion.x > GetWindowSize().X - SidebarWidth - GridSize)
 			{
 				if (NodeOnMouse)
 				{

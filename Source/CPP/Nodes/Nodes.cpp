@@ -89,12 +89,7 @@ bool Node::Emit(string& Output, vector<CompilationProblem>& Problems, vector<sha
 	Path.push_back(shared_from_this());
 
 	// Call internal emit
-	bool Result = EmitInternal(Output, Problems, Path);
-	
-	// Remove self from path
-	Path.erase(Path.end() - 1);
-
-	return Result;
+	return EmitInternal(Output, Problems, Path);
 }
 
 void Node::Draw(const Alchemist* Instance, const Point& Position, bool IsPreview) const
