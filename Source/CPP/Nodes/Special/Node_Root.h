@@ -22,6 +22,7 @@ public:
 	virtual shared_ptr<Node> Clone() const override;
 	virtual void Draw(const Alchemist* Instance, const Point& Position, bool IsPreview = false) const override;
 	virtual bool EmitInternal(string& Output, vector<CompilationProblem>& Problems, vector<shared_ptr<Node>> Path) override;
+	virtual bool CanBeOperand() const override { return false; }
 	// End of Node interface.
 
 protected:

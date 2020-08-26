@@ -79,6 +79,9 @@ public:
 	/** Returns given argument's argument name. */
 	string GetArgumentName(int Argument) const;
 
+	/** Returns false if this node can never be used in an expression. */
+	virtual bool CanBeOperand() const { return true; }
+
 	/**
 	 * Returns given argument's argument index.
 	 * Returns -1 if no such argument exists.

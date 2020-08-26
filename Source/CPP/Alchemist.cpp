@@ -1005,6 +1005,11 @@ bool Alchemist::GridHandleEvent(SDL_Event& Event)
 				// If there is one, start creating a connector from this node.
 				NodeBeingConnected = CurrentFunction->GetNodeAt(MouseGridPosition);
 
+				if(NodeBeingConnected && !NodeBeingConnected->CanBeOperand())
+				{
+					NodeBeingConnected.reset(); // disallow non-operand nodes from having connectors
+				}
+				
 				return true;
 			}
 
