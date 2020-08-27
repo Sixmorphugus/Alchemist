@@ -105,6 +105,11 @@ bool Node_Root::EmitInternal(string& Output, vector<CompilationProblem>& Problem
 			Success = false;
 		}
 	}
+	else
+	{
+		Problems.push_back(CompilationProblem{ shared_from_this(), "Return value was not defined." });
+		Success = false;
+	}
 
 	return Success;
 }

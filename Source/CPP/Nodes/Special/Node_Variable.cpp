@@ -25,15 +25,17 @@ void Node_Variable::Draw(const Alchemist* Instance, const Point& Position, bool 
 
 	if(Name != "")
 	{
-		SDL_Texture* Tex = Font->GetStringTexture(Name);
-		Size Siz = Font->GetStringScreenSize(Name);
+		int ValueTextSize = max(8, 30 - (6 * (max((int)Name.size() - 2, 0))));
+		
+		SDL_Texture* Tex = Font->GetStringTexture(Name, ValueTextSize);
+		Size Siz = Font->GetStringScreenSize(Name, ValueTextSize);
 
 		SDL_SetTextureColorMod(Tex, 0, 0, 0);
 
 		SDL_Rect TexDestRect
 		{
 			Position.X + 32 - (Siz.X / 2),
-			Position.Y + 16,
+			Position.Y + 32 - (Siz.Y / 2),
 			Siz.X,
 			Siz.Y
 		};

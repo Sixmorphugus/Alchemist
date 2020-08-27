@@ -24,18 +24,19 @@ void Node_Term_Int::Draw(const Alchemist* Instance, const Point& Position, bool 
 	//Node::Draw(Instance, Position, IsPreview);
 
 	string ValueText = to_string(Value);
+	int ValueTextSize = max(8, 30 - (6 * (max((int)ValueText.size() - 2, 0))));
 	
 	shared_ptr<Resource_Font> Font = Instance->GetResourceManager()->GetResource<Resource_Font>("Font.ttf");
 	
-	SDL_Texture* Tex = Font->GetStringTexture(ValueText);
-	Size Siz = Font->GetStringScreenSize(ValueText);
+	SDL_Texture* Tex = Font->GetStringTexture(ValueText, ValueTextSize);
+	Size Siz = Font->GetStringScreenSize(ValueText, ValueTextSize);
 
 	SDL_SetTextureColorMod(Tex, 0, 0, 0);
 	
 	SDL_Rect TexDestRect
 	{
 		Position.X + 32 - (Siz.X / 2),
-		Position.Y + 16,
+		Position.Y + 32 - (Siz.Y / 2),
 		Siz.X,
 		Siz.Y
 	};
