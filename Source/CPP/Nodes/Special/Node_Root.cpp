@@ -116,6 +116,15 @@ bool Node_Root::EmitInternal(string& Output, vector<CompilationProblem>& Problem
 
 void Node_Root::OnFunctionChanged()
 {
+	// Store connectors
+	vector<shared_ptr<Node>> Connectors;
+	
+	for(int i = 0; i < GetNumArguments(); i++)
+	{
+		Connectors.push_back(GetConnector(i));
+	}
+
+	// Do the deed
 	ClearArguments();
 	
 	// Register return argument.
@@ -128,6 +137,12 @@ void Node_Root::OnFunctionChanged()
 	for (int i = 0; i < GetFunction()->GetArity(); i++)
 	{
 		RegisterArgument("ArgPattern" + to_string(i), true);
+	}
+
+	// Re-load stored arguments
+	for (int i = 0; i < Connectors.size() && i < GetNumArguments(); i++)
+	{
+		SetConnector(Connectors[i], i);
 	}
 }
 

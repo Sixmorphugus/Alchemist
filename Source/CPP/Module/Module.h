@@ -39,7 +39,6 @@ public:
 	/** Rebuilds function lookup. */
 	void UpdateLookups();
 
-protected:
 	/** Handles module change. */
 	void BroadcastOnModuleChanged();
 

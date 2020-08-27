@@ -106,9 +106,26 @@ void Node_UserDefined::OnModuleChanged()
 
 void Node_UserDefined::SetupArgs()
 {
+	// Store connectors
+	vector<shared_ptr<Node>> Connectors;
+
+	for (int i = 0; i < GetNumArguments(); i++)
+	{
+		Connectors.push_back(GetConnector(i));
+	}
+	
+	// Clear arguments
+	ClearArguments();
+	
 	// Create all needed args
 	for (int i = 0; i < Func.lock()->GetArity(); i++)
 	{
 		RegisterArgument("Arg" + to_string(i+1));
+	}
+
+	// Re-load stored arguments
+	for (int i = 0; i < Connectors.size() && i < GetNumArguments(); i++)
+	{
+		SetConnector(Connectors[i], i);
 	}
 }

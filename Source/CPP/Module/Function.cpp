@@ -119,6 +119,8 @@ void Function::SetArity(int NewArity)
 	{
 		Node->OnFunctionChanged();
 	}
+
+	ParentModule->BroadcastOnModuleChanged();
 }
 
 bool Function::Emit(string& Output, vector<CompilationProblem>& Problems) const
