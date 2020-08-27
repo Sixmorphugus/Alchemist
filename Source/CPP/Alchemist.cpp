@@ -205,7 +205,13 @@ Point Alchemist::GraphToScreen(const Point& GraphPosition) const
 
 Point Alchemist::GraphToGrid(const Point& GraphPosition) const
 {
-	return GraphPosition / GridSize;
+	Point Out = GraphPosition;
+
+	// screw whatever causes this to be necessary 
+	Out.X = (int)floor((float)Out.X / (float)GridSize);
+	Out.Y = (int)floor((float)Out.Y / (float)GridSize);
+
+	return Out;
 }
 
 Point Alchemist::GridToGraph(const Point& GridPosition) const
