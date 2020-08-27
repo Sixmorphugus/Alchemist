@@ -171,15 +171,16 @@ public:
 
 		shared_ptr<Resource_Font> Font = Instance->GetResourceManager()->GetResource<Resource_Font>("Font.ttf");
 
-		SDL_Texture* Tex = Font->GetStringTexture(OperatorTraits::SymbolChar);
-		Size Siz = Font->GetStringScreenSize(OperatorTraits::SymbolChar);
+		int ValueTextSize = max(8, 30 - (8 * (max((int)OperatorTraits::SymbolChar.size() - 2, 0))));
+		SDL_Texture* Tex = Font->GetStringTexture(OperatorTraits::SymbolChar, ValueTextSize);
+		Size Siz = Font->GetStringScreenSize(OperatorTraits::SymbolChar, ValueTextSize);
 
 		SDL_SetTextureColorMod(Tex, 0, 0, 0);
 
 		SDL_Rect TexDestRect
 		{
 			Position.X + 32 - (Siz.X / 2),
-			Position.Y + 16,
+			Position.Y + 32 - (Siz.Y / 2),
 			Siz.X,
 			Siz.Y
 		};
@@ -279,15 +280,16 @@ public:
 
 		shared_ptr<Resource_Font> Font = Instance->GetResourceManager()->GetResource<Resource_Font>("Font.ttf");
 
-		SDL_Texture* Tex = Font->GetStringTexture(OperatorTraits::SymbolChar);
-		Size Siz = Font->GetStringScreenSize(OperatorTraits::SymbolChar);
+		int ValueTextSize = max(8, 30 - (8 * (max((int)OperatorTraits::SymbolChar.size() - 2, 0))));
+		SDL_Texture* Tex = Font->GetStringTexture(OperatorTraits::SymbolChar, ValueTextSize);
+		Size Siz = Font->GetStringScreenSize(OperatorTraits::SymbolChar, ValueTextSize);
 
 		SDL_SetTextureColorMod(Tex, 0, 0, 0);
 
 		SDL_Rect TexDestRect
 		{
 			Position.X + 32 - (Siz.X / 2),
-			Position.Y + 16,
+			Position.Y + 32 - (Siz.Y / 2),
 			Siz.X,
 			Siz.Y
 		};
